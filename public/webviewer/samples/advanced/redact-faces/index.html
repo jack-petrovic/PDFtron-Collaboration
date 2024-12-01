@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Redact faces with Apryse WebViewer</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      #viewer {
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+    <link type="text/css" rel="stylesheet" href="./progress.css" />
+  </head>
+  <body>
+    <div id="viewer"></div>
+    <script type="text/javascript">
+      var isIE11 = navigator.userAgent.indexOf('Trident/7.0') > -1;
+      if (isIE11) {
+        var viewerElement = document.getElementById('viewer');
+        var messageDiv = document.createElement('div');
+        messageDiv.innerHTML = 'Due to limitations in the 3rd party face recognition library, Internet Explorer 11 is not supported at this time. Sorry for the inconvenience.';
+        viewerElement.appendChild(messageDiv);
+      } else {
+        document.write('<script src="../../../lib/webviewer.min.js"><\/script>');
+        document.write('<script src="face-api.min.js"><\/script>');
+        document.write('<script src="progress.js"><\/script>');
+        document.write('<script src="redact-faces.js"><\/script>');
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="../../style.css" />
+    <script src="../../../lib/webviewer.min.js"></script>
+    <script src="../../global.js"></script>
+  </head>
+  <body>
+    <header>
+      <div class="title sample">Accessibility sample</div>
+    </header>
+    <aside>
+      <h1>Controls</h1>
+      <h2>Select Speech Option</h2>
+      <button id="play">Play</button>
+      <button id="pause">Pause</button>
+      <h2>Voice</h2>
+      <select id="voice"></select>
+      <h2>Pitch</h2>
+      <input id="pitch" style="width:100%" type="range" min="1" max="100" value="50" />
+      <h2>Rate</h2>
+      <input id="rate" style="width:100%" type="range" min="1" max="100" value="10" />
+      <h2>Volume</h2>
+      <input id="volume" style="width:100%" type="range" min="1" max="100" value="100" />
+      <hr />
+      <h1>Instructions</h1>
+      <p>Click <b>Play</b> or press <b>p</b> to play the text-to-speech feature. Press <b>Tab</b> to go to the next page.</p>
+      <p>The available controls are as follows:</p>
+      <ul>
+        <li><b>Voice:</b> Language and gender of the voice</li>
+        <li><b>Pitch:</b> Pitch of the voice</li>
+        <li><b>Rate:</b> Speed at which the text is read</li>
+        <li><b>Volume:</b> Volume at which the text is read</li>
+      </ul>
+    </aside>
+    <div id="viewer"></div>
+    <script src="../../menu-button.js"></script>
+    <script src="accessibility.js"></script>
+  </body>
+</html>

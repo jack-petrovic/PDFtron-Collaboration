@@ -1,0 +1,45 @@
+.App {
+  text-align: center;
+}
+
+.avatar {
+  height: 150px;
+  width: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.avatar:hover {
+  cursor: pointer;
+}
+
+.icon-avatar {
+  transform: scale(1.4);
+}
+
+.user-header {
+  display: flex;
+  align-items: center;
+}
+
+/* Style for webviewer */
+
+.webviewer {
+  height: calc(100vh - 60px);
+}
+
+.quill-container .ql-editor {
+  min-height: 150px;
+}
+
+#notification_content {
+  max-width: 350px;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

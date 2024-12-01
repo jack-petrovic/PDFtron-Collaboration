@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html style="height:100%;">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="../../style.css" />
+    <script src="../../old-browser-checker.js"></script>
+    <title>Portfolio Viewing Sample</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="title sample">Portfolio Viewing Sample</div>
+      <script src="../../../lib/webviewer.min.js"></script>
+    </header>
+    <aside>
+      <p>In this example, you can view a PDF Portfolio file in WebViewer.</p>
+      <p>Items in the PDF portfolio will be shown in the portfolio panel, and they can be opened in a new tab.</p>
+      <p>To create a new PDF portfolio, you can click the 'Create PDF Portfolio' button in the menu overlay.</p>
+      <h2>Choose your own PDF file</h2>
+      <input id="file-picker" type="file" accept=".pdf" />
+      <h2>Or pass a url to a PDF document</h2>
+      <form id="url-form">
+        <input id="url" type="text" style="width: 100%" />
+        <input type="submit" value="Submit" />
+      </form>
+      <br />
+      <a href="https://docs.apryse.com/documentation/web/guides/portfolio/" target="_blank">Documentation</a>
+      <br />
+      <a href="https://apryse.com/blog/working-with-pdf-portfolio" target="_blank">Blog</a>
+    </aside>
+
+    <div id="viewer" style="overflow: hidden;"></div>
+
+    <script src="../../menu-button.js"></script>
+
+    <script src="./PortfolioTest.js"></script>
+  </body>
+</html>

@@ -1,0 +1,4 @@
+export const TOAST_ACTIONS = {
+  SHOW_TOAST: "SHOW_TOAST",
+  CLOSE_TOAST: "CLOSE_TOAST",
+};

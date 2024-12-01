@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="../../style.css" />
+    <script src="../../../lib/core/webviewer-core.min.js"></script>
+    <script src="../../../lib/core/pdf/PDFNet.js"></script>
+    <script src="../../full-apis/Setup.js"></script>
+    <script src="../../modernizr.custom.min.js"></script>
+    <script src="../../FileSaver.min.js"></script>
+  </head>
+
+  <body>
+    <script></script>
+    <header>
+      <div class="title sample">Office To PDF Samples</div>
+    </header>
+    <div class="cardWrapper">
+      <div class="card" id="office-to-pdf">
+        <p>Test File: <a href="../../files/simple-excel_2007.xlsx">simple-excel_2007.xlsx</a></p>
+        <p><button class="Button" id="xlsx_button" onClick="runOfficeToPDF('simple-excel_2007.xlsx', 'XLSX' )">Download Converted XLSX File</button></p>
+      </div>
+      <div class="card">
+        <p>Test File: <a href="../../files/simple-word_2007.docx">simple-word_2007.docx</a></p>
+        <p><button class="Button" id="docx_button" onClick="runOfficeToPDF('simple-word_2007.docx', 'DOCX')">Download Converted DOCX File</button></p>
+      </div>
+      <div class="card">
+        <p>Test File: <a href="../../files/simple-powerpoint_2007.pptx">simple-powerpoint_2007.pptx</a></p>
+        <p><button class="Button" id="pptx_button" onClick="runOfficeToPDF('simple-powerpoint_2007.pptx', 'PPTX')">Download Converted PPTX File</button></p>
+      </div>
+    </div>
+    <script src="./office-to-pdf-test.js"></script>
+  </body>
+</html>

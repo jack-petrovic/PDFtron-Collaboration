@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="../../style.css" />
+    <script src="../../../lib/webviewer.min.js"></script>
+    <script src="../../old-browser-checker.js"></script>
+    <script src="../../global.js"></script>
+    <title>JavaScript PDF Viewer Custom Annotation Demo</title>
+  </head>
+  <body>
+    <header>
+      <div class="title sample">Custom Annotation Demo for PDF Viewer</div>
+    </header>
+    <aside>
+      <h1>Controls</h1>
+      <h2>Custom annotation tools</h2>
+      <input type="checkbox" id="custom-triangle-tool" />
+      <label for="custom-triangle-tool">Custom triangle tool</label>
+      <br />
+      <input type="checkbox" id="custom-stamp" />
+      <label for="custom-stamp">Custom stamp tool</label>
+      <h2>Sample stamp</h2>
+      <div>
+        <img id="sample-image" draggable="true" src="./stamp.png" />
+      </div>
+      <h2>Add a custom stamp</h2>
+      <input id="file-open" type="file" />
+      <hr />
+      <h1>Instructions</h1>
+      <p>Toggle checkboxes to create/destroy custom annotation tools.</p>
+      <p>Click the sample image to add a stamp</p>
+      <p>Create your own custom stamp</p>
+    </aside>
+    <div id="viewer"></div>
+    <script src="../../menu-button.js"></script>
+    <script src="stamp.js"></script>
+    <script src="./triangle/triangle-control-handle.js"></script>
+    <script src="./triangle/triangle-selection-model.js"></script>
+    <script src="./triangle/triangle-annotation.js"></script>
+    <script src="./triangle/triangle-create-tool.js"></script>
+    <script src="custom-annotations.js"></script>
+    <!--ga-tag-->
+  </body>
+</html>
