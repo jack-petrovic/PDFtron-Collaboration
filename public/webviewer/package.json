@@ -1,7 +1,7 @@
 {
   "name": "webviewer",
   "description": "Apryse WebViewer",
-  "version": "11.0.0",
+  "version": "11.1.0",
   "main": "lib/webviewer.min.js",
   "scripts": {
     "start": "npm run samples",

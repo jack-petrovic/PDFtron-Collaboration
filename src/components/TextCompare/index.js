@@ -115,12 +115,12 @@ function TextCompare({ file1, file2 }) {
           const options = { beforeColor, afterColor };
           const { doc1Annotations, diffCount } = await documentViewer1.startSemanticDiff(documentViewer2, options);
 
+          let i = 0;
           let insertedNumber = 0;
           let deletedNumber = 0;
           let editedNumber = 0;
-
-          doc1Annotations.forEach(annotation => {
-            switch (annotation.aj.TextDiffType) {
+          for (i = 0; i < doc1Annotations.length; i++) {
+            switch (doc1Annotations[i].aj.TextDiffType) {
               case "insert":
                 insertedNumber++;
                 break;
@@ -133,19 +133,18 @@ function TextCompare({ file1, file2 }) {
               default:
                 break;
             }
-          });
+          }
           const metaData = {
             total: doc1Annotations.length,
             inserted: insertedNumber,
             edited: editedNumber,
             deleted: deletedNumber,
           };
-
-          await createComparison({
+          createComparison({
             planId: file2?.planId,
             stage: file2?.stage,
             metaData: JSON.stringify(metaData),
-          });
+          }).then();
           const modalContent = ReactDOM.createRoot(resultElement);
           modalContent.render(
             <TextDiffDialog
@@ -157,8 +156,6 @@ function TextCompare({ file1, file2 }) {
               stage={file2?.stage}
             />,
           );
-        } else {
-          console.log("Documents not loaded yet."); // Log if documents are not loaded
         }
       };
       startCompare();

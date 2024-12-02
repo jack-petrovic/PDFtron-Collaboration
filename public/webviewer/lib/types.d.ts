@@ -12125,10 +12125,10 @@ declare namespace Core.PDFNet {
          */
         static createViewerOptimizedOptions(): Promise<PDFNet.PDFDoc.ViewerOptimizedOptions>;
         /**
-         * Method to create a RefreshOptions object
-         * @returns A promise that resolves to a PDFNet.PDFDoc.RefreshOptions.
+         * Method to create a MergeXFDFOptions object
+         * @returns A promise that resolves to a PDFNet.PDFDoc.MergeXFDFOptions.
          */
-        static createRefreshOptions(): Promise<PDFNet.PDFDoc.RefreshOptions>;
+        static createMergeXFDFOptions(): Promise<PDFNet.PDFDoc.MergeXFDFOptions>;
         /**
          * Method to create a DiffOptions object
          * @returns A promise that resolves to a PDFNet.PDFDoc.DiffOptions.
@@ -12140,15 +12140,15 @@ declare namespace Core.PDFNet {
          */
         static createTextDiffOptions(): Promise<PDFNet.PDFDoc.TextDiffOptions>;
         /**
+         * Method to create a RefreshOptions object
+         * @returns A promise that resolves to a PDFNet.PDFDoc.RefreshOptions.
+         */
+        static createRefreshOptions(): Promise<PDFNet.PDFDoc.RefreshOptions>;
+        /**
          * Method to create a SnapToOptions object
          * @returns A promise that resolves to a PDFNet.PDFDoc.SnapToOptions.
          */
         static createSnapToOptions(): Promise<PDFNet.PDFDoc.SnapToOptions>;
-        /**
-         * Method to create a MergeXFDFOptions object
-         * @returns A promise that resolves to a PDFNet.PDFDoc.MergeXFDFOptions.
-         */
-        static createMergeXFDFOptions(): Promise<PDFNet.PDFDoc.MergeXFDFOptions>;
         /**
          * Get the Action associated with the selected Doc Trigger event.
          * @param trigger - <pre>
@@ -22134,61 +22134,35 @@ declare namespace Core.PDFNet {
             setOverprint(mode: number): PDFNet.PDFDoc.ViewerOptimizedOptions;
         }
         /**
-         * Options for PDFNet.PDFDoc.RefreshAnnotAppearances or PDFNet.Annot.refreshAppearanceRefreshOptions
+         * Options for PDFNet.PDFDoc.mergeXFDF and PDFNet.PDFDoc.mergeXFDFString.
          */
-        class RefreshOptions {
+        class MergeXFDFOptions {
             /**
-             * Gets the value DrawBackgroundOnly from the options object
-             * If true draw only the background and border, which can be useful when generating the rest of the annotation content elsewhere. Off by default.
-             * @returns the current value for DrawBackgroundOnly.
+             * Gets the value Force from the options object.
+             * If true, merge will be performed even if the conditions below are true. If false, the MergeXFDF operation will be aborted with exception if one of these conditions is true: 1)xfdf contains annotations with no 'name' attribute 2)annotations in pdf or xfdf have names that are not unique, i.e. multiple annotations in the same document have the same name. In order for the merge operation to work correctly, all the annotations in xfdf need to have a unique 'name' attribute. If pdf document has unnamed annotatations (no 'NM' attribute), xfdf files generated using Apryse SDK will still have names that will allow the MergeXFDF algorithm to work.
+             * @returns The current value for Force.
              */
-            getDrawBackgroundOnly(): boolean;
+            getForce(): boolean;
             /**
-             * Sets the value for DrawBackgroundOnly in the options object
-             * If true draw only the background and border, which can be useful when generating the rest of the annotation content elsewhere. Off by default.
-             * @param value - the new value for DrawBackgroundOnly
-             * @returns this object, for call chaining
+             * Sets the value for Force in the options object.
+             * If true, merge will be performed even if the conditions below are true. If false, the MergeXFDF operation will be aborted with exception if one of these conditions is true: 1)xfdf contains annotations with no 'name' attribute 2)annotations in pdf or xfdf have names that are not unique, i.e. multiple annotations in the same document have the same name. In order for the merge operation to work correctly, all the annotations in xfdf need to have a unique 'name' attribute. If pdf document has unnamed annotatations (no 'NM' attribute), xfdf files generated using Apryse SDK will still have names that will allow the MergeXFDF algorithm to work.
+             * @param value - The new value for Force
+             * @returns This object, for call chaining.
              */
-            setDrawBackgroundOnly(value: boolean): PDFNet.PDFDoc.RefreshOptions;
+            setForce(value: boolean): PDFNet.PDFDoc.MergeXFDFOptions;
             /**
-             * Gets the value RefreshExisting from the options object
-             * Whether we should refresh annotations with existing appearances. Defaults to false when used in PDFDoc.RefreshAnnotAppearances and true when used in Annot.RefreshAppearance.
-             * @returns the current value for RefreshExisting.
-             */
-            getRefreshExisting(): boolean;
-            /**
-             * Sets the value for RefreshExisting in the options object
-             * Whether we should refresh annotations with existing appearances. Defaults to false when used in PDFDoc.RefreshAnnotAppearances and true when used in Annot.RefreshAppearance.
-             * @param value - the new value for RefreshExisting
-             * @returns this object, for call chaining
-             */
-            setRefreshExisting(value: boolean): PDFNet.PDFDoc.RefreshOptions;
-            /**
-             * Gets the value UseNonStandardRotation from the options object
+             * Gets the value UseNonStandardRotation from the options object.
              * Whether we should use rotation in the annotation even if it is not a multiple of 90. Off by default.
-             * @returns the current value for UseNonStandardRotation.
+             * @returns The current value for UseNonStandardRotation.
              */
             getUseNonStandardRotation(): boolean;
             /**
-             * Sets the value for UseNonStandardRotation in the options object
+             * Sets the value for UseNonStandardRotation in the options object.
              * Whether we should use rotation in the annotation even if it is not a multiple of 90. Off by default.
-             * @param value - the new value for UseNonStandardRotation.
-             * @returns this object, for call chaining
+             * @param value - The new value for UseNonStandardRotation
+             * @returns This object, for call chaining.
              */
-            setUseNonStandardRotation(value: boolean): PDFNet.PDFDoc.RefreshOptions;
-            /**
-             * Gets the value UseRoundedCorners from the options object
-             * Whether we should use the corner radii specified in Annot.BorderStyle. Off by default.
-             * @returns the current value for UseRoundedCorners.
-             */
-            getUseRoundedCorners(): boolean;
-            /**
-             * Sets the value for UseRoundedCorners in the options object
-             * Whether we should use the corner radii specified in Annot.BorderStyle. Off by default.
-             * @param value - the new value for UseRoundedCorners.
-             * @returns this object, for call chaining
-             */
-            setUseRoundedCorners(value: boolean): PDFNet.PDFDoc.RefreshOptions;
+            setUseNonStandardRotation(value: boolean): PDFNet.PDFDoc.MergeXFDFOptions;
         }
         /**
          * Options for PDFNet.PDFDoc.appendVisualDiff
@@ -22458,6 +22432,63 @@ declare namespace Core.PDFNet {
             addIgnoreZonesForPage(regions: PDFNet.Rect[], page_num: number): PDFNet.PDFDoc.TextDiffOptions;
         }
         /**
+         * Options for PDFNet.PDFDoc.RefreshAnnotAppearances or PDFNet.Annot.refreshAppearanceRefreshOptions
+         */
+        class RefreshOptions {
+            /**
+             * Gets the value DrawBackgroundOnly from the options object
+             * If true draw only the background and border, which can be useful when generating the rest of the annotation content elsewhere. Off by default.
+             * @returns the current value for DrawBackgroundOnly.
+             */
+            getDrawBackgroundOnly(): boolean;
+            /**
+             * Sets the value for DrawBackgroundOnly in the options object
+             * If true draw only the background and border, which can be useful when generating the rest of the annotation content elsewhere. Off by default.
+             * @param value - the new value for DrawBackgroundOnly
+             * @returns this object, for call chaining
+             */
+            setDrawBackgroundOnly(value: boolean): PDFNet.PDFDoc.RefreshOptions;
+            /**
+             * Gets the value RefreshExisting from the options object
+             * Whether we should refresh annotations with existing appearances. Defaults to false when used in PDFDoc.RefreshAnnotAppearances and true when used in Annot.RefreshAppearance.
+             * @returns the current value for RefreshExisting.
+             */
+            getRefreshExisting(): boolean;
+            /**
+             * Sets the value for RefreshExisting in the options object
+             * Whether we should refresh annotations with existing appearances. Defaults to false when used in PDFDoc.RefreshAnnotAppearances and true when used in Annot.RefreshAppearance.
+             * @param value - the new value for RefreshExisting
+             * @returns this object, for call chaining
+             */
+            setRefreshExisting(value: boolean): PDFNet.PDFDoc.RefreshOptions;
+            /**
+             * Gets the value UseNonStandardRotation from the options object
+             * Whether we should use rotation in the annotation even if it is not a multiple of 90. Off by default.
+             * @returns the current value for UseNonStandardRotation.
+             */
+            getUseNonStandardRotation(): boolean;
+            /**
+             * Sets the value for UseNonStandardRotation in the options object
+             * Whether we should use rotation in the annotation even if it is not a multiple of 90. Off by default.
+             * @param value - the new value for UseNonStandardRotation.
+             * @returns this object, for call chaining
+             */
+            setUseNonStandardRotation(value: boolean): PDFNet.PDFDoc.RefreshOptions;
+            /**
+             * Gets the value UseRoundedCorners from the options object
+             * Whether we should use the corner radii specified in Annot.BorderStyle. Off by default.
+             * @returns the current value for UseRoundedCorners.
+             */
+            getUseRoundedCorners(): boolean;
+            /**
+             * Sets the value for UseRoundedCorners in the options object
+             * Whether we should use the corner radii specified in Annot.BorderStyle. Off by default.
+             * @param value - the new value for UseRoundedCorners.
+             * @returns this object, for call chaining
+             */
+            setUseRoundedCorners(value: boolean): PDFNet.PDFDoc.RefreshOptions;
+        }
+        /**
          * Options for PDFNet.PDFDoc.getGeometryCollectionForPageWithOptions
          */
         class SnapToOptions {
@@ -22468,37 +22499,6 @@ declare namespace Core.PDFNet {
              * @returns this object, for call chaining
              */
             setShapeLimit(value: number): PDFNet.PDFDoc.SnapToOptions;
-        }
-        /**
-         * Options for PDFNet.PDFDoc.mergeXFDF and PDFNet.PDFDoc.mergeXFDFString.
-         */
-        class MergeXFDFOptions {
-            /**
-             * Gets the value Force from the options object.
-             * If true, merge will be performed even if the conditions below are true. If false, the MergeXFDF operation will be aborted with exception if one of these conditions is true: 1)xfdf contains annotations with no 'name' attribute 2)annotations in pdf or xfdf have names that are not unique, i.e. multiple annotations in the same document have the same name. In order for the merge operation to work correctly, all the annotations in xfdf need to have a unique 'name' attribute. If pdf document has unnamed annotatations (no 'NM' attribute), xfdf files generated using Apryse SDK will still have names that will allow the MergeXFDF algorithm to work.
-             * @returns The current value for Force.
-             */
-            getForce(): boolean;
-            /**
-             * Sets the value for Force in the options object.
-             * If true, merge will be performed even if the conditions below are true. If false, the MergeXFDF operation will be aborted with exception if one of these conditions is true: 1)xfdf contains annotations with no 'name' attribute 2)annotations in pdf or xfdf have names that are not unique, i.e. multiple annotations in the same document have the same name. In order for the merge operation to work correctly, all the annotations in xfdf need to have a unique 'name' attribute. If pdf document has unnamed annotatations (no 'NM' attribute), xfdf files generated using Apryse SDK will still have names that will allow the MergeXFDF algorithm to work.
-             * @param value - The new value for Force
-             * @returns This object, for call chaining.
-             */
-            setForce(value: boolean): PDFNet.PDFDoc.MergeXFDFOptions;
-            /**
-             * Gets the value UseNonStandardRotation from the options object.
-             * Whether we should use rotation in the annotation even if it is not a multiple of 90. Off by default.
-             * @returns The current value for UseNonStandardRotation.
-             */
-            getUseNonStandardRotation(): boolean;
-            /**
-             * Sets the value for UseNonStandardRotation in the options object.
-             * Whether we should use rotation in the annotation even if it is not a multiple of 90. Off by default.
-             * @param value - The new value for UseNonStandardRotation
-             * @returns This object, for call chaining.
-             */
-            setUseNonStandardRotation(value: boolean): PDFNet.PDFDoc.MergeXFDFOptions;
         }
         enum EventType {
             e_action_trigger_doc_will_close,
@@ -24492,9 +24492,18 @@ declare namespace Core {
         }
     }
     /**
+     * Enables the execution of embedded JavaScript
+     */
+    function enableEmbeddedJavaScript(): void;
+    /**
      * Disables the execution of embedded JavaScript
      */
     function disableEmbeddedJavaScript(): void;
+    /**
+     * Returns whether embedded JavaScript is enabled or not
+     * @returns Returns whether embedded JavaScript is enabled or not
+     */
+    function isEmbeddedJavaScriptEnabled(): boolean;
     /**
      * The namespace for anything to do with PDF annotations.
      */
@@ -26290,6 +26299,10 @@ declare namespace Core {
              */
             setFileData(data: ArrayBuffer, mimeType: string, filename: string): Promise<void>;
             /**
+             * @returns Object containing important attributes of the file
+             */
+            getFullFileMetadata(): Promise<Core.Annotations.FileAttachmentAnnotation.FullFileMetadata>;
+            /**
              * <p>Gets or sets the icon for this fileattachment.</p>
              * <p>Possible default icon types:</p>
              * <ul>
@@ -26313,6 +26326,26 @@ declare namespace Core {
                  * The name of the file to be saved
                  */
                 filename: string;
+            };
+            /**
+             */
+            type FullFileMetadata = {
+                /**
+                 * The mimetype attribute of the file
+                 */
+                annotation: string;
+                /**
+                 * The name of the file to be saved
+                 */
+                fileData: Blob;
+                /**
+                 * The name of the file to be saved
+                 */
+                filename: string;
+                /**
+                 * The mimetype attribute of the file
+                 */
+                mimeType: string;
             };
         }
         /**
@@ -27771,6 +27804,21 @@ declare namespace Core {
              */
             set(options: Core.Annotations.WidgetAnnotation): void;
             /**
+             * Set the field options associated with the Widget Annotation
+             * @param options - The field options to associate with the widget annotation
+             */
+            setFieldOptions(options: Core.Annotations.WidgetAnnotation.ListOption): void;
+            /**
+             * Gets the field options associated with the Widget Annotation
+             * @returns The field options associated with the widget annotation
+             */
+            getFieldOptions(): Core.Annotations.WidgetAnnotation.ListOption[];
+            /**
+             * Returns the field flags associated with the form field widget
+             * @returns The field flags associated with the widget annotation
+             */
+            getFieldFlags(): Core.Annotations.WidgetAnnotation.FlagOptions;
+            /**
              * Get the widget's value.
              * @returns The widget's value (potentially formatted).
              */
@@ -27848,6 +27896,51 @@ declare namespace Core {
              * A function that receives the widget object and should return any CSS styles that you want to override for its parent container
             */
             getContainerCustomStyles: (...params: any[]) => any;
+        }
+        namespace WidgetAnnotation {
+            /**
+             * @example
+             * {
+             *  value: '2000',
+             *  displayValue: '2K'
+             * }
+             */
+            type ListOption = {
+                /**
+                 * The field option for combo box widget and list box widget.
+                 */
+                option: {
+                    value: string;
+                    displayValue: string;
+                };
+            };
+            /**
+             * @example
+             * {
+             *   Multiline: true,
+             *   Required: false,
+             *   ReadOnly: true,
+             *   MultiSelect: false
+             * }
+             */
+            type FlagOptions = {
+                /**
+                 * Indicates if the field allows multiple lines of input.
+                 */
+                Multiline?: boolean;
+                /**
+                 * Specifies if the field is required.
+                 */
+                Required?: boolean;
+                /**
+                 * Determines if the field is read-only.
+                 */
+                ReadOnly?: boolean;
+                /**
+                 * Specifies if multiple selections are allowed in the field.
+                 */
+                MultiSelect?: boolean;
+            };
         }
         /**
          * An object that describes flags on a Widget, or other PDF objects.
@@ -30573,6 +30666,12 @@ declare namespace Core {
          */
         isInContentEditMode(): boolean;
         /**
+         * Gets the text attributes applied to the content edit box.
+         * @param contentBoxId - The id of the content box.
+         * @returns A promise that resolves to an object containing the text attributes applied to the content box.
+         */
+        getContentBoxAttributes(contentBoxId: string): Promise<Core.ContentEdit.TextAttributes>;
+        /**
          * Starts the Content Edit mode, a mode in which links are disabled
          * and boxes are drawn around all editable content so users can edit them
          */
@@ -30780,6 +30879,7 @@ declare namespace Core {
                 applyPageBreaksToSheet?: boolean;
                 displayChangeTracking?: boolean;
                 displayHiddenText?: boolean;
+                displayComments?: number;
                 excelDefaultCellBorderWidth?: number;
                 excelMaxAllowedCellCount?: number;
                 locale?: string;
@@ -32468,6 +32568,7 @@ declare namespace Core {
                 applyPageBreaksToSheet?: boolean;
                 displayChangeTracking?: boolean;
                 displayHiddenText?: boolean;
+                displayComments?: number;
                 excelDefaultCellBorderWidth?: number;
                 excelMaxAllowedCellCount?: number;
                 locale?: string;
@@ -33048,18 +33149,36 @@ declare namespace Core {
          */
         displayFirstPage(): void;
         /**
-         * Set the user bookmarks from the left panel of UI.
-         * @param newBookmarks - An array of integers representing only the pages that are bookmarked from the left panel of UI.
+         * Gets the user bookmarks.
+         * @returns An object with the bookmarked page indices as the key and associated title as the value.
          */
-        setUserBookmarks(newBookmarks: number[]): void;
+        getUserBookmarks(): any;
+        /**
+         * Set the user bookmarks.
+         * @param newBookmarks - A map of bookmarked pages.
+         */
+        setUserBookmarks(newBookmarks: {
+            [key: number]: string;
+        }): void;
+        /**
+         * Adds a new user bookmark. If one exists, it will be updated.
+         * @param pageIndex - The page index to bookmark
+         * @param text - The text associated identifying the bookmark
+         */
+        addUserBookmark(pageIndex: number, text: string): void;
+        /**
+         * Removes a user bookmark.
+         * @param pageIndex - The page index to remove
+         */
+        removeUserBookmark(pageIndex: number): void;
         /**
          * Accepts a function that runs when the bookmark icon shortcut on the top right corner of a page is toggled on.
-         * @param callback - A callback function that takes 0-index based page number as parameter that adds a bookmark from the bookmark icon shortcut.
+         * @param callback - A callback function that takes a 0-index based as parameter that adds a bookmark from the bookmark icon shortcut.
          */
         setBookmarkShortcutToggleOnFunction(callback: Core.DocumentViewer.onToggleOnBookmarkShortcut): void;
         /**
          * Accepts a function that runs when the bookmark icon shortcut on the top right corner of a page is toggled off.
-         * @param callback - A callback function that takes 0-index based page number as parameter that removes a bookmark from the bookmark icon shortcut.
+         * @param callback - A callback function that takes a 0-index based as parameter that removes a bookmark from the bookmark icon shortcut.
          */
         setBookmarkShortcutToggleOffFunction(callback: Core.DocumentViewer.onToggleOffBookmarkShortcut): void;
         /**
@@ -33730,6 +33849,43 @@ declare namespace Core {
          */
         one(event: 'embeddedPopUpMenu', callback: (popUpMenuData: Core.DocumentViewer.embeddedPopUpMenuData) => void): void;
         off(event?: 'embeddedPopUpMenu', callback?: (popUpMenuData: Core.DocumentViewer.embeddedPopUpMenuData) => void): void;
+        /**
+         * Triggered when user bookmarks have been changed
+         * @param current - An object map with the bookmarked page numbers as keys and their associated text as values
+         * @param eventInfo - An object containing event details
+         * @param eventInfo.added - An array of page numbers that were added
+         * @param eventInfo.updated - An array of page numbers that were updated
+         * @param eventInfo.removed - An array of page numbers that were removed
+         */
+        on(event: 'userBookmarksChanged', callback: (current: {
+            [key: number]: string;
+        }, eventInfo: {
+            added: number[];
+            updated: number[];
+            removed: number[];
+        }) => void): void;
+        /**
+         * Triggered when user bookmarks have been changed
+         * @param current - An object map with the bookmarked page numbers as keys and their associated text as values
+         * @param eventInfo - An object containing event details
+         * @param eventInfo.added - An array of page numbers that were added
+         * @param eventInfo.updated - An array of page numbers that were updated
+         * @param eventInfo.removed - An array of page numbers that were removed
+         */
+        one(event: 'userBookmarksChanged', callback: (current: {
+            [key: number]: string;
+        }, eventInfo: {
+            added: number[];
+            updated: number[];
+            removed: number[];
+        }) => void): void;
+        off(event?: 'userBookmarksChanged', callback?: (current: {
+            [key: number]: string;
+        }, eventInfo: {
+            added: number[];
+            updated: number[];
+            removed: number[];
+        }) => void): void;
         /**
          * @property ACTIVE_SEARCH_RESULT_CHANGED - {@link Core.DocumentViewer#event:activeSearchResultChanged Core.DocumentViewer.activeSearchResultChanged }
          * @property MOUSE_LEFT_UP - {@link Core.DocumentViewer#event:mouseLeftUp Core.DocumentViewer.mouseLeftUp }
@@ -41555,6 +41711,7 @@ declare namespace UI {
          * @param [options.officeOptions.formatOptions.applyPageBreaksToSheet] - If true will split Excel worksheets into pages so that the output resembles print output.
          * @param [options.officeOptions.formatOptions.displayChangeTracking] - If true will display office change tracking markup present in the document (i.e, red strikethrough of deleted content and underlining of new content). Otherwise displays the resolved document content, with no markup. Defaults to true.
          * @param [officeOptions.formatOptions.displayHiddenText] - If true will display hidden text in document. Otherwise hidden text will not be shown. Defaults to false.
+         * @param [officeOptions.formatOptions.displayComments] - If set to 1, it will display comment annotations in the document. Otherwise, comment annotations will not be shown. Defaults to 0 - no comments.
          * @param [options.officeOptions.formatOptions.excelDefaultCellBorderWidth] - Cell border width for table cells that would normally be drawn with no border. In units of points. Can be used to achieve a similar effect to the "show gridlines" display option within Microsoft Excel.
          * @param [options.officeOptions.formatOptions.excelMaxAllowedCellCount] - An exception will be thrown if the number of cells in an Excel document is above the value. Used for early termination of resource intensive documents. Setting this value to 250000 will allow the vast majority of Excel documents to convert without issue, while keeping RAM usage to a reasonable level. By default there is no limit to the number of allowed cells.
          * @param [options.officeOptions.formatOptions.locale] - Sets the value for Locale in the options object ISO 639-1 code of the current system locale. For example: 'en-US', 'ar-SA', 'de-DE', etc.
@@ -41623,6 +41780,23 @@ declare namespace UI {
          *   });
          */
         function disableDeleteTabWarning(): void;
+        /**
+         * Sets a custom handler function for processing tab names.
+         * This handler can be used to display formatted tab names as needed.
+         * @example
+         * WebViewer(...).then(function(instance) {
+         *   const { UI } = instance
+         *   UI.enableFeatures(['MultiTab']);
+         *   UI.addEventListener(UI.Events.TAB_MANAGER_READY, () => {
+         *     instance.UI.TabManager.setTabNameHandler((originalName) => {
+         *       const [updatedName] = originalName.replace(/\+/g, '%20').split('/').slice(-1);
+         *       return decodeURIComponent(updatedName);
+         *     });
+         *   });
+         * });
+         * @param tabNameHandler - A function that processes the original tab name and returns the processed name.
+         */
+        function setTabNameHandler(tabNameHandler: (...params: any[]) => any): void;
     }
     /**
      * Add custom modal element to WebViewer.
@@ -42502,7 +42676,7 @@ declare namespace UI {
      */
     function exitMultiViewerMode(): void;
     /**
-     * Returns a dictionary with page indices as keys and the bookmark text as the values
+     * Returns a dictionary with page numbers as keys and the bookmark text as the values
      * @example
      * WebViewer(...)
      *   .then(function(instance) {
@@ -42514,7 +42688,7 @@ declare namespace UI {
      *       body: bookmarksString // written into a json file on server
      *     });
      *   });
-     * @returns A dictionary with page indices as keys and the bookmark text as the values. ex: {"0":"Bookmark 1","2":"Bookmark 2"}
+     * @returns A dictionary with page numbers as keys and the bookmark text as the values. ex: {"1":"Bookmark 1","3":"Bookmark 2"}
      */
     function exportBookmarks(): any;
     /**
@@ -42922,7 +43096,7 @@ declare namespace UI {
      *       }
      *     });
      *   });
-     * @param bookmarks - A dictionary with page indices as keys and the bookmark text as the values. ex: {"0":"Bookmark 1","2":"Bookmark 2"}. Behaviour is undefined otherwise.
+     * @param bookmarks - A dictionary with page numbers as keys and the bookmark text as the values. ex: {"1":"Bookmark 1","3":"Bookmark 2"}. Behaviour is undefined otherwise.
      */
     function importBookmarks(bookmarks: any): void;
     /**
@@ -43076,6 +43250,7 @@ declare namespace UI {
                 applyPageBreaksToSheet?: boolean;
                 displayChangeTracking?: boolean;
                 displayHiddenText?: boolean;
+                displayComments?: number;
                 excelDefaultCellBorderWidth?: number;
                 excelMaxAllowedCellCount?: number;
                 locale?: string;
@@ -44164,6 +44339,24 @@ declare namespace UI {
      * @param ribbonItem - dataElement of the ribbon item to set as active.
      */
     function setActiveRibbonItem(ribbonItem: string): void;
+    /**
+     * Set an active tab inside of a tab panel.
+     * @example
+     * WebViewer(...)
+     *   .then(function(instance) {
+     *     // open left panel
+     *     instance.UI.openElements(['leftPanel']);
+     *     // view outlines panel
+     *     instance.UI.setActiveTabInPanel({ tabPanel: 'leftPanel', tabName: 'outlinesPanel' });
+     *   });
+     * @param options - The options for selecting the active tab inside a tab panel
+     * @param options.tabPanel - The identifier for the tab panel where the tab is located.
+     * @param options.tabName - The name of the tab to activate.
+     */
+    function setActiveTabInPanel(options: {
+        tabPanel: string;
+        tabName: string;
+    }): void;
     /**
      * Adds a custom overlay to annotations on mouseHover, overriding the existing overlay.
      * @example

@@ -163,8 +163,9 @@ function LiveCollaboration(props) {
       WebViewer(
         {
           path: "/webviewer/lib", // path to the PDFTron 'lib' folder
-          initialDoc: doc.urlFile, // 'https://pdftron.s3.amazonaws.com/downloads/pl/webviewer-demo.pdf'
+          initialDoc: doc.urlFile,
           documentXFDFRetriever: async () => {
+            console.log("-=================================================>");
             const rows = await loadXfdfStrings(DOCUMENT_ID);
             return rows.map((row) => row.xfdfString);
           },
