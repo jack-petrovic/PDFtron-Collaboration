@@ -46,7 +46,7 @@ WebViewerConstructor(
     path: '../../../lib',
     initialDoc: sourceOne,
     fullAPI: isFullAPI,
-    ui: uiOption,
+    ui: 'legacy',
   },
   document.getElementById('middlePanel')
 ).then(instance => {
@@ -61,7 +61,7 @@ WebViewerConstructor(
     path: '../../../lib',
     initialDoc: sourceTwo,
     fullAPI: isFullAPI,
-    ui: uiOption,
+    ui: 'legacy',
   },
   document.getElementById('leftPanel')
 ).then(instance => {

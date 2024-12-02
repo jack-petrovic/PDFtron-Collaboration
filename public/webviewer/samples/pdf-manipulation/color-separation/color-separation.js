@@ -23,7 +23,7 @@ WebViewerConstructor(
     fullAPI: true,
     initialDoc: '../../../samples/files/op-blend-test.pdf',
     enableFilePicker: true,
-    ui: uiOption,
+    ui: 'legacy',
   },
   document.getElementById('viewer')
 ).then(instance => {

@@ -47,7 +47,7 @@ WebViewerConstructor(
     path: '../../../lib',
     initialDoc,
     documentId: IDS[initialDoc],
-    ui: uiOption,
+    ui: 'legacy',
   },
   document.getElementById('viewer')
 ).then(instance => {

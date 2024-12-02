@@ -5,7 +5,7 @@ WebViewerConstructor(
   {
     path: '../../../lib',
     initialDoc: '../../full-apis/TestFiles/contract.pdf',
-    ui: uiOption,
+    ui: 'legacy',
   },
   document.getElementById('viewer')
 ).then(instance => {

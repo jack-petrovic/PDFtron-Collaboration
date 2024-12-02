@@ -23,7 +23,7 @@ WebViewerConstructor(
   {
     path: '../../../lib',
     initialDoc: 'https://pdftron.s3.amazonaws.com/downloads/pl/legal-contract.pdf',
-    ui: uiOption,
+    ui: 'legacy',
   },
   viewerElement
 ).then(instance => {

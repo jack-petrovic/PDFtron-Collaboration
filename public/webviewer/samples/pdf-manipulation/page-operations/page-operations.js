@@ -24,7 +24,7 @@ WebViewerConstructor(
     path: '../../../lib',
     useDownloader: false,
     initialDoc: '../../../samples/files/demo.pdf',
-    ui: uiOption,
+    ui: 'legacy',
   },
   document.getElementById('viewer')
 ).then(instance => {

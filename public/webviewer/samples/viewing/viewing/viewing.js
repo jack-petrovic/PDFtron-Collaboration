@@ -7,7 +7,7 @@ WebViewerConstructor(
   {
     path: '../../../lib',
     initialDoc: 'https://pdftron.s3.amazonaws.com/downloads/pl/demo-annotated.pdf',
-    ui: uiOption,
+    ui: 'legacy',
   },
   document.getElementById('viewer')
 ).then(instance => {

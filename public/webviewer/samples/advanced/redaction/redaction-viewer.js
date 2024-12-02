@@ -12,7 +12,7 @@ WebViewerConstructor(
     initialDoc: 'https://s3.amazonaws.com/pdftron/downloads/pl/legal-contract.pdf',
     fullAPI: true,
     enableRedaction: true,
-    ui: uiOption,
+    ui: 'legacy',
   },
   document.getElementById('viewer')
 ).then(instance => {

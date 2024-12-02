@@ -45,7 +45,7 @@ const initializeWebViewer = viewer => {
       loadAsPDF: true,
 
       initialDoc: viewer.initialDoc,
-      ui: uiOption,
+      ui: 'legacy',
     },
     document.getElementById(`${viewer.domElement}`)
   ).then(instance => {

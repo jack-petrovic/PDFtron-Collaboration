@@ -11,7 +11,7 @@ WebViewerConstructor(
     // in this example we are using 'all' to preload resources for office files
     // when working with only pdf, set to 'pdf' to avoid downloading unneeded resources
     preloadWorker: 'all',
-    ui: uiOption,
+    ui: 'legacy',
   },
   viewerElement
 ).then(instance => {

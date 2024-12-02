@@ -16,7 +16,7 @@ WebViewerConstructor(
   {
     path: '../../../lib',
     initialDoc: '../../../samples/files/construction-drawing-final.pdf',
-    ui: uiOption,
+    ui: 'legacy',
   },
   document.getElementById('viewer')
 ).then(instance => {

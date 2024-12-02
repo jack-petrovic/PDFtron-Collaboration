@@ -13,7 +13,7 @@ WebViewerConstructor(
     path: '../../../lib',
     initialDoc: '../../../samples/files/houseplan-A.pdf',
     enableMeasurement: true,
-    ui: uiOption,
+    ui: 'legacy',
   },
   document.getElementById('viewer')
 ).then(instance => {

@@ -10,7 +10,7 @@ WebViewerConstructor(
   {
     path: '../../../lib',
     initialDoc: 'https://pdftron.s3.amazonaws.com/downloads/pl/form1.pdf',
-    ui: uiOption,
+    ui: 'legacy',
   },
   document.getElementById('viewer')
 ).then(instance => {

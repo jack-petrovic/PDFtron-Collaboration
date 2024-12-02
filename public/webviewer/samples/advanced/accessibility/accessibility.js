@@ -48,7 +48,7 @@ WebViewerConstructor(
     path: '../../../lib',
     initialDoc: '../../../samples/files/cheetahs.pdf',
     accessibleMode: true,
-    ui: uiOption,
+    ui: 'legacy',
   },
   document.getElementById('viewer')
 ).then(instance => {
