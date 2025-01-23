@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import * as Yup from "yup";
 import { useFormik } from "formik";
@@ -6,11 +6,9 @@ import {
   Box,
   Button,
   Divider,
-  FormControl,
   InputLabel,
   Modal,
   Select,
-  TextField,
   Typography,
   MenuItem,
 } from "@mui/material";
@@ -22,15 +20,22 @@ import FileDropzone from "../../FileDropzone";
 import { useAuthState } from "../../../hooks/redux";
 import { MenuProps, UserRoles } from "../../../constants";
 import { getPlans, ToastService } from "../../../services";
-import { CloseButtonBox, FormBox, FormContainer } from "../style";
+import {
+  CloseButtonBox,
+  CustomFormControl,
+  FormBox,
+  FormContainer,
+  SubmitButton,
+} from "../style";
 import { FileDropzoneContainer } from "./style";
+import { FormTextField } from "../../../pages/style";
 
 const validationSchema = Yup.object().shape({
   owner: Yup.string().required("modal_owner_required"),
   planId: Yup.string().required("modal_planId_required"),
 });
 
-const CreateDocumentModal = ({ open, close, data, create }) => {
+const CreateDocumentModal = ({ open, close, data, create, update }) => {
   const { t } = useTranslation();
   const editing = !!data;
   const [file, setFile] = useState(null);
@@ -42,23 +47,18 @@ const CreateDocumentModal = ({ open, close, data, create }) => {
   const handleSubmit = async (formData) => {
     if (file) {
       await create(formData, file);
+    } else if (editing && !file) {
+      await update(data.documentId, formData);
     } else {
       ToastService.error(getLocaleString("toast_upload_invalid_live_document"));
     }
   };
 
   useEffect(() => {
-    let query = { pageSize: 100, page: 1 };
+    let query = { pageSize: 100, page: 0 };
     getPlans(query)
       .then((data) => {
         setPlans(data.rows);
-      })
-      .catch((err) => {
-        ToastService.error(
-          getLocaleString(
-            err.response?.data?.message || "common_network_error",
-          ),
-        );
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -78,7 +78,7 @@ const CreateDocumentModal = ({ open, close, data, create }) => {
   });
 
   useEffect(() => {
-    if (data) {
+    if (data && open) {
       form.setValues({
         fileName: data.fileName,
         owner: data.owner,
@@ -90,7 +90,23 @@ const CreateDocumentModal = ({ open, close, data, create }) => {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
+  }, [data, open]);
+
+  const isChanged = useMemo(
+    () =>
+      (data && (
+        form.values.fileName !== data?.fileName ||
+        form.values.owner !== data?.owner ||
+        form.values.planId !== data?.planId ||
+        form.values.approvalStatus !== data?.approvalStatus
+      )) || (!data && (
+        form.values.fileName !== "" ||
+        form.values.owner !== account?.email ||
+        form.values.planId !== ""
+      ))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    , [form.values, data]
+  );
 
   const updateApprovalStatus = (status) => {
     const currentStatus = JSON.parse(form.values.approvalStatus);
@@ -187,10 +203,7 @@ const CreateDocumentModal = ({ open, close, data, create }) => {
           )}
           <form onSubmit={form.handleSubmit} encType="multipart/form-data">
             <FormBox>
-              <FormControl
-                fullWidth
-                sx={{ marginBottom: "1rem", maxHeight: "100px" }}
-              >
+              <CustomFormControl fullWidth>
                 <InputLabel id="plan-label">
                   {getLocaleString("common_table_plan")}
                 </InputLabel>
@@ -208,8 +221,8 @@ const CreateDocumentModal = ({ open, close, data, create }) => {
                     </MenuItem>
                   ))}
                 </Select>
-              </FormControl>
-              <TextField
+              </CustomFormControl>
+              <FormTextField
                 fullWidth
                 label={getLocaleString("common_table_owner")}
                 placeholder={getLocaleString("modal_owner_placeholder")}
@@ -220,7 +233,6 @@ const CreateDocumentModal = ({ open, close, data, create }) => {
                     : "",
                 )}
                 error={Boolean(form.errors.owner && form.touched.owner)}
-                sx={{ mb: 3 }}
               />
               {(account.role.name === UserRoles.MASTER ||
                 account.role.name === UserRoles.SUPERMASTER) && (
@@ -272,16 +284,11 @@ const CreateDocumentModal = ({ open, close, data, create }) => {
                 </React.Fragment>
               )}
             </FormBox>
-            <Button
-              fullWidth
-              type="submit"
-              variant="contained"
-              sx={{ textTransform: "capitalize" }}
-            >
+            <SubmitButton fullWidth type="submit" variant="contained" disabled={!isChanged}>
               {!editing
                 ? getLocaleString("common_create")
                 : getLocaleString("common_save")}
-            </Button>
+            </SubmitButton>
           </form>
           <CloseButtonBox>
             <CloseIcon onClick={close} />

@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import {
   Box,
   Checkbox,
-  Chip,
   FormControlLabel,
   Paper,
   Table,
@@ -16,9 +15,10 @@ import {
 } from "@mui/material";
 import moment from "moment";
 import { StageMode } from "../../../constants";
-import { getRoles, ToastService } from "../../../services";
+import { getRoles } from "../../../services";
 import { useSelector } from "react-redux";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import { ArchivedChip, ArchivedIcon } from "../../../pages/style";
+import { addDays } from "date-fns";
 
 const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
   const { t } = useTranslation();
@@ -37,10 +37,14 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
       },
     ];
     query.pageSize = 10;
-    query.page = 1;
-    getRoles(query).then((res) => {
-      setSignedRoles(res.rows);
-    });
+    query.page = 0;
+    getRoles(query)
+      .then((res) => {
+        setSignedRoles(res.rows);
+      })
+      .catch((err) => {
+        console.log("err=>", err);
+      });
     if (data) {
       const dataStages = JSON.parse(data || "[]");
       const orderedStages = dataStages.sort(
@@ -75,7 +79,7 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
       let planEnd = planStart;
       for (let i = 0; i < stages.length; i++) {
         if (!stages[i]?.enabled) continue;
-        planEnd = moment(planEnd).add(stages[i].days, "days").toString();
+        planEnd = addDays(new Date(planEnd), stages[i].days);
       }
       onChange(JSON.stringify(stages), planEnd);
     }
@@ -140,8 +144,6 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
         }
         return newStages;
       });
-    } else {
-      ToastService.error(getLocaleString("toast_stage_table_value_error"));
     }
   };
 
@@ -163,8 +165,6 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
         }
         return newStages;
       });
-    } else {
-      ToastService.error(getLocaleString("toast_stage_table_value_error"));
     }
   };
 
@@ -195,7 +195,7 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
     return {
       start: moment(start).format("YYYY-MM-DD"),
       end: moment(start)
-        .add(stages[ind].days - 1, "days")
+        .add(stages[ind].days, "days")
         .format("YYYY-MM-DD"),
     };
   };
@@ -243,13 +243,12 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
               sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
             >
               <TableCell align="center">
-                {row.stageMode}
+                {row?.stageMode}
                 {checkItemDisabled(row) && (
-                  <Chip
+                  <ArchivedChip
                     label="Disabled"
-                    icon={<WarningAmberIcon sx={{ fontSize: "16px" }} />}
+                    icon={<ArchivedIcon />}
                     color="warning"
-                    sx={{ marginLeft: "0.5rem" }}
                   />
                 )}
               </TableCell>
@@ -257,7 +256,7 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={row.enabled}
+                      checked={row?.enabled || false}
                       onChange={() => handleEnableChange(index)}
                     />
                   }
@@ -269,25 +268,32 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={row.printPermission}
+                      checked={row?.printPermission}
                       onChange={() => handlePrintPermissionChange(row?.id)}
                     />
                   }
                   label={""}
                   disabled={
-                    !row.enabled ||
+                    !row?.enabled ||
                     row?.stageMode === StageMode.PRESCRIPTIONMODE
                   }
                 />
               </TableCell>
               <TableCell align="center">
                 <TextField
-                  value={row.printVolume}
+                  value={row?.enabled && row?.printPermission && row?.printVolume}
                   type="number"
+                  sx={{
+                    "& .MuiInputBase-root": {
+                      height: "2rem",
+                      width: "6rem",
+                      marginX: "auto",
+                    },
+                  }}
                   onChange={(e) =>
                     handlePrintAmountChange(index, e.target.value)
                   }
-                  disabled={!row.printPermission}
+                  disabled={!row?.enabled || !row?.printPermission}
                 />
               </TableCell>
               <TableCell align="center">
@@ -295,18 +301,18 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
                   sx={{
                     "& .MuiInputBase-root": {
                       height: "2rem",
-                      width: "10rem",
+                      width: "5rem",
                       marginX: "auto",
                     },
                   }}
                   type="number"
-                  disabled={!row.enabled || disable}
-                  value={row.days}
+                  disabled={!row?.enabled || disable}
+                  value={row?.days}
                   onChange={(e) => handleDaysChange(index, e.target.value)}
                 />
-                {row.enabled && showRanges && (
+                {row?.enabled && showRanges && (
                   <Box>
-                    {getRange(index).start}~{getRange(index).end}
+                    {getRange(index).start} ~ {getRange(index).end}
                   </Box>
                 )}
               </TableCell>
@@ -316,14 +322,17 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
                   align="center"
                   sx={{ paddingX: "0 !important" }}
                 >
-                  {row.stageMode !== StageMode.PRESCRIPTIONMODE && (
+                  {row?.stageMode !== StageMode.PRESCRIPTIONMODE && (
                     <FormControlLabel
                       control={
                         <Checkbox
-                          checked={!!row?.approvers?.includes(item.name)}
+                          checked={
+                            !!row?.approvers?.includes(item.name) || false
+                          }
                           onChange={() =>
                             handleApproverChange(row?.id, item.name)
                           }
+                          disabled={!row?.enabled}
                         />
                       }
                       label={""}

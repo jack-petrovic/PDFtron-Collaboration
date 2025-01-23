@@ -1,12 +1,31 @@
-import { post, get } from "./http.service";
+import store from "../redux/store";
+import { AUTH_ACTIONS } from "../redux/action-types";
+import { post, get, put } from "./http.service";
+import { setAccount } from "../redux/actions";
+import { ToastService } from "../services";
+import { setToken } from "../redux/actions";
 
 export class AuthService {
-  static getAccount(showSpinner = true) {
-    return get("/auth", {}, {}, showSpinner);
+  static async getAccount(showSpinner = true) {
+    store.dispatch({
+      type: AUTH_ACTIONS.GET_ACCOUNT_REQUEST
+    })
+    const res = await get("/auth", {}, {}, showSpinner);
+    store.dispatch(setAccount(res.account));
+    if (!res.account.roleId) {
+      ToastService.warning(
+        "Please contact administrator to approve your profile.",
+      );
+    }
+    return res;
   }
 
-  static login({ emailOrUserId, password, showSpinner = true }) {
-    return post("/auth/login", { emailOrUserId, password }, {}, showSpinner);
+  static async login({ emailOrUserId, password, showSpinner = true }) {
+    const res = await post("/auth/login", { emailOrUserId, password }, {}, showSpinner);
+    store.dispatch(setToken({
+      accessToken: res.accessToken,
+      refreshToken: res.refreshToken,
+    }));
   }
 
   static register({
@@ -32,5 +51,9 @@ export class AuthService {
 
   static logout() {
     return post("/auth/logout");
+  }
+
+  static changePassword(data, showSpinner = true) {
+    return put("/auth/change-password", data, {}, showSpinner);
   }
 }

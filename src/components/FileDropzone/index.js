@@ -13,7 +13,12 @@ const FileDropzone = ({ children, onChange }) => {
   );
 
   const { getRootProps, getInputProps } = useDropzone({
-    accept: [".txt", ".pdf"],
+    accept: {
+      "text/plain": [".txt"],
+      "application/pdf": [".pdf"],
+      "image/jpeg": [".jpeg", ".jpg"],
+      "image/png": [".png"],
+    },
     onDrop: handleDrop,
     multiple: false,
   });

@@ -1,7 +1,7 @@
 import MenuAction from "../../components/MenuAction";
 
-function Home() {
+const Home = () => {
   return <MenuAction />;
-}
+};
 
 export default Home;

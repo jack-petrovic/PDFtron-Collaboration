@@ -1,44 +1,45 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Box, Typography } from "@mui/material";
-import { FormWrapper, FromContainer, MenuActionItem } from "./style";
+import { Typography } from "@mui/material";
+import {
+  FormWrapper,
+  FormContainer,
+  MenuActionItem,
+  MenuContainer,
+} from "./style";
 
-function MenuAction() {
+const MenuAction = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const getLocaleString = (key) => t(key);
 
   const menuItems = [
     {
-      key: "menu_action_live_collaboration",
-      path: "/result",
-    },
-    {
-      key: "menu_action_comparison",
-      path: "/compare",
-    },
-    {
-      key: "menu_action_digital_signature",
-      path: "/signature",
+      key: "menu_action_pdf_compare",
+      path: "/main-pdf-comparison",
     },
     {
       key: "menu_action_text_compare",
-      path: "/text-compare",
+      path: "/main-text-comparison",
+    },
+    {
+      key: "menu_action_image_compare",
+      path: "/main-image-comparison",
     },
   ];
 
   return (
     <FormWrapper>
-      <FromContainer>
-        <Box sx={{ marginBottom: "1rem" }}>
+      <FormContainer>
+        <MenuContainer>
           <Typography variant="h5">
             {getLocaleString("common_welcome")}!
           </Typography>
           <Typography>
             {getLocaleString("menu_action_choose_feature")}
           </Typography>
-        </Box>
+        </MenuContainer>
         {menuItems.map(({ key, path }) => (
           <MenuActionItem
             key={key}
@@ -48,9 +49,9 @@ function MenuAction() {
             {getLocaleString(key)}
           </MenuActionItem>
         ))}
-      </FromContainer>
+      </FormContainer>
     </FormWrapper>
   );
-}
+};
 
 export default MenuAction;

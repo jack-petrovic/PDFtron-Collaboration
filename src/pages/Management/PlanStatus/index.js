@@ -28,6 +28,7 @@ const PlanStatus = () => {
   const [totalStage, setTotalStage] = useState(0);
   const [openNextStageModal, setOpenNextStageModal] = useState(false);
   const [openMarkCompleteModal, setOpenMarkCompleteModal] = useState(false);
+  const [openApprovalStatusModal, setOpenApprovalStatusModal] = useState(false);
   const [users, setUsers] = useState([]);
   const getLocaleString = (key) => t(key);
 
@@ -36,12 +37,15 @@ const PlanStatus = () => {
       .then((res) => {
         setPlan(res);
         setTotalStage(
-          JSON.parse(res.stages).filter((stage) => stage.enabled).length,
+          JSON.parse(res.stages).filter((stage) => stage.enabled)?.length,
         );
       })
       .catch((err) => {
         console.log("err=>", err);
+        ToastService.error(t(err.response?.data?.message || "common_network_error"));
+        handleReturn();
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const handleReturn = () => {
@@ -50,76 +54,78 @@ const PlanStatus = () => {
 
   const fetchDocuments = async () => {
     let query = {};
-    getUsers(query).then((res) => {
-      setUsers(res.rows);
-    });
+    getUsers(query)
+      .then((res) => setUsers(res.rows))
+      .catch((err) => {
+        console.log("err=>", err);
+      });
   };
 
   useEffect(() => {
-    fetchDocuments();
+    try {
+      fetchDocuments();
+    } catch (err) {
+      console.log("err=>", err);
+    } // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    let query = {};
-    query.pageSize = 10;
-    query.page = 1;
-    getStages(query)
-      .then((res) => setStages(res.rows))
-      .catch((err) =>
-        ToastService.error(
-          getLocaleString(
-            err.response?.data?.message || "common_network_error",
-          ),
-        ),
-      );
+    if (plan) {
+      let query = {};
+      query.pageSize = 10;
+      query.page = 0;
+      getStages(query)
+          .then((res) => setStages(res.rows));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const pushStageToNext = async () => {
-    try {
-      await updatePlan(plan?.id, {
-        ...plan,
-        currentStage: Number(plan.currentStage) + 1,
-      }).then((res) => {
+    await updatePlan(plan?.id, {
+      ...plan,
+      currentStage: Number(plan.currentStage) + 1,
+    })
+      .then((res) => {
         ToastService.success(getLocaleString(res.message));
+      })
+      .catch((err) => {
+        console.log("err=>", err);
       });
 
-      await getPlan(id).then((res) => {
-        setPlan(res);
-        ToastService.success(getLocaleString("toast_plan_go_next_step"));
-        sendNotification(
-          connection,
-          account.id,
-          "notification",
-          {
-            key: "toast_notification_next_stage",
-            data: {
-              user: account.name,
-              currentStage: plan.currentStage,
-              movedStage: Number(plan.currentStage) + 1,
-            },
+    await getPlan(id).then((res) => {
+      setPlan(res);
+      ToastService.success(getLocaleString("toast_plan_go_next_step"));
+      sendNotification(
+        connection,
+        account.id,
+        "notification",
+        {
+          key: "toast_notification_next_stage",
+          data: {
+            user: account.name,
+            currentStage: plan.currentStage,
+            movedStage: Number(plan.currentStage) + 1,
           },
-          "next",
-        );
-      });
-    } catch (err) {
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
+        },
+        "next",
       );
-    }
+    });
   };
 
   const handlePrescriptionStage = async () => {
-    const enablePass = plan.prescriptions.some((prescription) => {
+    const countApprovals = plan.prescriptions.filter((prescription) => {
       const approvalStatus = JSON.parse(prescription?.approvalStatus || "{}");
       return (
         approvalStatus[UserRoles.MASTER] === 1 &&
         approvalStatus[UserRoles.SUBMASTER] === 1
       );
-    });
+    }).length;
+    const countPrescriptions = plan.prescriptions.length;
 
-    if (enablePass) {
+    if (countApprovals > 0 && countApprovals === countPrescriptions) {
       pushStageToNext();
+    } else if (countApprovals > 0 && countApprovals !== countPrescriptions) {
+      setOpenApprovalStatusModal(true);
     } else {
       ToastService.warning(
         getLocaleString("toast_prescriptions_status_warning"),
@@ -180,18 +186,22 @@ const PlanStatus = () => {
   };
 
   const handleNextStage = async () => {
-    const stageCount = JSON.parse(plan.stages || "[]")?.filter(
-      (item) => item.enabled,
-    )?.length;
-    await fetchDocuments();
-    if (plan?.currentStage === 0) {
-      handlePrescriptionStage().then((res) => {});
-    } else if (plan?.currentStage === stageCount - 1) {
-      ToastService.warning(getLocaleString("toast_next_stage_warning"));
-    } else {
-      await handleUpdateCurrentStage();
+    try {
+      const stageCount = JSON.parse(plan.stages || "[]")?.filter(
+        (item) => item.enabled,
+      )?.length;
+      await fetchDocuments();
+      if (plan?.currentStage === 0) {
+        handlePrescriptionStage().then((res) => {});
+      } else if (plan?.currentStage === stageCount - 1) {
+        ToastService.warning(getLocaleString("toast_next_stage_warning"));
+      } else {
+        await handleUpdateCurrentStage();
+      }
+      handleCloseNextStageModal();
+    } catch (err) {
+      console.log("err=>", err);
     }
-    handleCloseNextStageModal();
   };
 
   const handleOpenNextStageModal = () => {
@@ -208,24 +218,15 @@ const PlanStatus = () => {
 
   const handleMarkCompleted = async () => {
     if (totalStage === plan.currentStage + 1) {
-      try {
-        await updatePlan(plan?.id, {
-          ...plan,
-          completed: true,
-        }).then((res) => {
-          ToastService.success(getLocaleString(res.message));
-        });
-        await getPlan(id).then((res) => {
-          setPlan(res);
-        });
-      } catch (err) {
-        console.log("err=>", err);
-        ToastService.error(
-          getLocaleString(
-            err.response?.data?.message || "common_network_error",
-          ),
-        );
-      }
+      await updatePlan(plan?.id, {
+        ...plan,
+        completed: true,
+      }).then((res) => {
+        ToastService.success(getLocaleString(res.message));
+      });
+      await getPlan(id).then((res) => {
+        setPlan(res);
+      });
     } else {
       ToastService.error(getLocaleString("toast_mark_plan_error"));
     }
@@ -244,8 +245,17 @@ const PlanStatus = () => {
     setOpenMarkCompleteModal(false);
   };
 
+  const handlePassPrescriptionMode = () => {
+    pushStageToNext();
+    setOpenApprovalStatusModal(false);
+  };
+
+  const handleCloseApprovalStatusModal = () => {
+    setOpenApprovalStatusModal(false);
+  };
+
   const isCompleted = plan?.completed;
-  const isOverFirstStage = plan?.currentStage > 1;
+  const isOverFirstStage = plan?.currentStage > 0;
   const isEmptyPrescription = !plan?.prescriptions?.length;
   const isMaster =
     account.role.name === UserRoles.MASTER ||
@@ -269,7 +279,7 @@ const PlanStatus = () => {
     const document = plan.live_documents?.find(
       (item) => item?.stage === plan?.currentStage || "",
     );
-    const uploadedStated = document ? true : false;
+    const uploadedStated = !!document;
     const currentStage = plan?.currentStage;
     return (uploadedStated && currentStage) || !currentStage;
   };
@@ -403,8 +413,7 @@ const PlanStatus = () => {
               </Grid>
               <Grid item xs={8}>
                 <Typography pl={2}>
-                  {moment(plan?.startDate).format("YYYY-MM-DD")} ~ " "
-                  {moment(plan?.endDate).format("YYYY-MM-DD")}
+                  {moment(plan?.startDate).format("YYYY-MM-DD")} ~ {moment(plan?.endDate).format("YYYY-MM-DD")}
                 </Typography>
               </Grid>
             </Grid>
@@ -462,23 +471,29 @@ const PlanStatus = () => {
             {getLocaleString("common_plan_status")}
           </Typography>
           <Typography textAlign="center">
-            ({moment(plan?.startDate).format("YYYY-MM-DD")} ~ " "
+            ({moment(plan?.startDate).format("YYYY-MM-DD")} ~
             {moment(plan?.endDate).format("YYYY-MM-DD")})
           </Typography>
         </Box>
         <StageTimeLine plan={plan} setPlan={setPlan} />
       </Box>
       <ConfirmModal
-        content={getLocaleString("toast_go_next_step_confirm_message")}
+        content="toast_go_next_step_confirm_message"
         open={openNextStageModal}
         close={handleCloseNextStageModal}
         handleClick={handleNextStage}
       />
       <ConfirmModal
-        content={getLocaleString("toast_mark_plan_confirm_message")}
+        content="toast_mark_plan_confirm_message"
         open={openMarkCompleteModal}
         close={handleCloseMarkCompleteModal}
         handleClick={handleMarkCompleted}
+      />
+      <ConfirmModal
+        content="toast_pass_prescription_confirm_message"
+        open={openApprovalStatusModal}
+        close={handleCloseApprovalStatusModal}
+        handleClick={handlePassPrescriptionMode}
       />
     </Box>
   );

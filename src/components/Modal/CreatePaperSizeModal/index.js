@@ -1,20 +1,22 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import CloseIcon from "@mui/icons-material/Close";
-import { Box, Button, Modal, TextField } from "@mui/material";
-import { CloseButtonBox, FormContainer } from "../style";
+import { Box, Modal, TextField } from "@mui/material";
+import { CloseButtonBox, FormContainer, SubmitButton } from "../style";
 import { useTranslation } from "react-i18next";
 
 const validationSchema = Yup.object().shape({
   name: Yup.string().required("modal_paper_size_required"),
   height: Yup.number()
     .required("modal_height_required")
+    .positive("modal_require_positive_number")
     .typeError("Height must be a number"),
   width: Yup.number()
     .required("modal_width_required")
+    .positive("modal_require_positive_number")
     .typeError("Width must be a number"),
 });
 
@@ -26,16 +28,10 @@ const CreatePaperSizeModal = ({ data, open, close, create, update }) => {
   const getLocaleString = (key) => t(key);
 
   const handleSubmit = async (values) => {
-    try {
-      if (editing) {
-        await update(id, values);
-      } else {
-        await create(values);
-      }
-      form.resetForm();
-      close();
-    } catch (error) {
-      console.error("Error submitting form:", error);
+    if (editing) {
+      await update(id, values);
+    } else {
+      await create(values);
     }
   };
 
@@ -50,7 +46,7 @@ const CreatePaperSizeModal = ({ data, open, close, create, update }) => {
   });
 
   useEffect(() => {
-    if (data) {
+    if (open && data) {
       form.setValues({
         name: data.name || "",
         height: data.height || "",
@@ -60,7 +56,21 @@ const CreatePaperSizeModal = ({ data, open, close, create, update }) => {
       form.resetForm();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
+  }, [data, open]);
+
+  const isChanged = useMemo(
+    () =>
+      (data && (
+        form.values.name !== data?.name ||
+        form.values.height !== data?.height ||
+        form.values.width !== data?.width
+      )) || (!data && (
+        form.values.name !== "" ||
+        form.values.height !== "" ||
+        form.values.width !== ""
+      ))
+    , [form.values, data]
+  );
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -113,16 +123,11 @@ const CreatePaperSizeModal = ({ data, open, close, create, update }) => {
                 <CloseButtonBox>
                   <CloseIcon onClick={close} />
                 </CloseButtonBox>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  sx={{ textTransform: "capitalize", marginTop: "1rem" }}
-                >
+                <SubmitButton type="submit" variant="contained" color="primary" disabled={!isChanged}>
                   {editing
                     ? getLocaleString("common_save")
                     : getLocaleString("common_create")}
-                </Button>
+                </SubmitButton>
               </Box>
             </form>
           </FormContainer>

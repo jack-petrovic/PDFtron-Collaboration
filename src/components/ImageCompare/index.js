@@ -14,8 +14,9 @@ import {
   ImageCompareItem,
   ImageCompareWrapper,
 } from "./style";
+import { SpinnerContainer } from "../SpinnerContainer";
 
-function ImageCompare({ file1, file2 }) {
+const ImageCompare = ({ file1, file2, isRandomMode }) => {
   const { t } = useTranslation();
   const { language } = i18next;
   const dispatch = useDispatch();
@@ -72,9 +73,11 @@ function ImageCompare({ file1, file2 }) {
   };
 
   useEffect(() => {
-    dispatch(startLoading());
+    if (!isRandomMode) {
+      dispatch(startLoading());
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isRandomMode]);
 
   useEffect(() => {
     if (totalPage1 && totalPage2) {
@@ -168,7 +171,7 @@ function ImageCompare({ file1, file2 }) {
           selectBtn.innerHTML = getLocaleString("compare_select_page_button");
           selectBtn.style.color = "#FFF";
           selectBtn.style.border = "none";
-          selectBtn.style.backgroundColor = "#589ad1";
+          selectBtn.style.backgroundColor = "#1976d2";
           selectBtn.style[":hover"] = "#1a4971";
           selectBtn.style.borderRadius = "6px";
           selectBtn.style.paddingTop = "8px";
@@ -296,7 +299,7 @@ function ImageCompare({ file1, file2 }) {
           imageCompareBtn.innerHTML = getLocaleString("compare_result_button");
           imageCompareBtn.style.color = "#FFF";
           imageCompareBtn.style.border = "none";
-          imageCompareBtn.style.backgroundColor = "#589ad1";
+          imageCompareBtn.style.backgroundColor = "#1976d2";
           imageCompareBtn.style[":hover"] = "#1a4971";
           imageCompareBtn.style.borderRadius = "6px";
           imageCompareBtn.style.paddingTop = "8px";
@@ -335,55 +338,69 @@ function ImageCompare({ file1, file2 }) {
   }, [instance, language]);
 
   useEffect(() => {
-    WebViewer(
+    WebViewer.Iframe(
       {
         path: "/webviewer/lib",
         fullAPI: true,
+        ui: "legacy",
+        licenseKey:
+          "demo:1733762057552:7ed577b4030000000021c2547b221caaa8034b12df9500f1a11ef76a43",
       },
       viewerCompare.current,
-    ).then((instance) => {
-      setInstance(instance);
-      const { UI, Core } = instance;
-      UI.enableFeatures([UI.Feature.MultiViewerMode]);
-      const { PDFNet } = Core;
+    )
+      .then((instance) => {
+        setInstance(instance);
+        const { UI, Core } = instance;
+        UI.enterMultiViewerMode();
+        const { PDFNet } = Core;
 
-      UI.addEventListener(UI.Events.VIEWER_LOADED, async () => {
-        await PDFNet.initialize();
-        const [documentViewer1, documentViewer2] = Core.getDocumentViewers();
-        setDocumentViewer1(documentViewer1);
-        setDocumentViewer2(documentViewer2);
+        UI.addEventListener(UI.Events.VIEWER_LOADED, async () => {
+          await PDFNet.initialize();
+          const [documentViewer1, documentViewer2] = Core.getDocumentViewers();
+          setDocumentViewer1(documentViewer1);
+          setDocumentViewer2(documentViewer2);
 
-        createComparison({
-          planId: file2?.planId,
-          stage: file2?.stage,
-          metaData: JSON.stringify(resultImageData),
-        }).then();
+          if (!isRandomMode) {
+            createComparison({
+              planId: file2?.planId,
+              stage: file2?.stage,
+              metaData: JSON.stringify(resultImageData),
+            }).then();
+          }
 
-        if (file1 && file2) {
-          const getDocument = async (url) => {
-            return await Core.createDocument(url);
-          };
+          if (file1 && file2) {
+            if (!isRandomMode) {
+              const getDocument = async (url) => {
+                return await Core.createDocument(url);
+              };
 
-          const [docviewer1, docviewer2] = await Promise.all([
-            getDocument(file1.urlFile),
-            getDocument(file2.urlFile),
-          ]);
+              const [docviewer1, docviewer2] = await Promise.all([
+                getDocument(file1.urlFile),
+                getDocument(file2.urlFile),
+              ]);
 
-          documentViewer1.loadDocument(docviewer1);
-          documentViewer2.loadDocument(docviewer2);
+              documentViewer1.loadDocument(docviewer1);
+              documentViewer2.loadDocument(docviewer2);
+            } else {
+              documentViewer1.loadDocument(file1);
+              documentViewer2.loadDocument(file2);
+            }
 
-          documentViewer1.addEventListener("documentLoaded", async () => {
-            dispatch(finishLoading());
-            loadTotalPage(documentViewer1, setTotalPage1);
-          });
+            documentViewer1.addEventListener("documentLoaded", async () => {
+              dispatch(finishLoading());
+              loadTotalPage(documentViewer1, setTotalPage1);
+            });
 
-          documentViewer2.addEventListener("documentLoaded", async () => {
-            dispatch(finishLoading());
-            loadTotalPage(documentViewer2, setTotalPage2);
-          });
-        }
+            documentViewer2.addEventListener("documentLoaded", async () => {
+              dispatch(finishLoading());
+              loadTotalPage(documentViewer2, setTotalPage2);
+            });
+          }
+        });
+      })
+      .catch((err) => {
+        console.log("err=>", err);
       });
-    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadDocumentViewer]);
 
@@ -415,7 +432,7 @@ function ImageCompare({ file1, file2 }) {
 
   return (
     <ImageCompareWrapper ref={viewerCompare}>
-      {file1 && file2 && (
+      {file1 && file2 && !isRandomMode && (
         <ImageCompareContainer>
           <ImageCompareItem>
             <span>
@@ -429,8 +446,9 @@ function ImageCompare({ file1, file2 }) {
           </ImageCompareItem>
         </ImageCompareContainer>
       )}
+      <SpinnerContainer />
       <ConfirmModal
-        content={getLocaleString("compare_confirm_message")}
+        content="compare_confirm_message"
         open={openConfirmModal}
         close={handleCloseCompareModal}
         handleClick={handleClick}
@@ -438,6 +456,6 @@ function ImageCompare({ file1, file2 }) {
       />
     </ImageCompareWrapper>
   );
-}
+};
 
 export default ImageCompare;

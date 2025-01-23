@@ -89,6 +89,7 @@ const SentimentModal = ({
         loading={isLoading}
         disabled={!textValue}
         onClick={onClickSentiment}
+        sx={{ mb: 1, mx: 0.5 }}
       >
         {getLocaleString("text_composer_sentiment")}
       </LoadingButton>

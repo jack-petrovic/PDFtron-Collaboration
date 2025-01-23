@@ -1,16 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import * as Yup from "yup";
 import { useFormik } from "formik";
-import {
-  Box,
-  Button,
-  FormControlLabel,
-  Modal,
-  Switch,
-  TextField,
-} from "@mui/material";
+import { Box, FormControlLabel, Modal, Switch, TextField } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { CloseButtonBox, FormContainer } from "../style";
+import { CloseButtonBox, FormContainer, SubmitButton } from "../style";
 import { useTranslation } from "react-i18next";
 
 const validationSchema = Yup.object().shape({
@@ -19,14 +12,15 @@ const validationSchema = Yup.object().shape({
 
 const CreateSectionModal = ({ open, close, data, create, update }) => {
   const { t } = useTranslation();
-  const editing = !!data;
+  const editing = Boolean(data);
   const id = data?.id;
   const getLocaleString = (key) => t(key);
-  const handleSubmit = async (data) => {
-    if (!editing) {
-      create(data);
+
+  const handleSubmit = async (formData) => {
+    if (editing) {
+      update(id, formData);
     } else {
-      update(id, data, form);
+      create(formData);
     }
   };
 
@@ -40,21 +34,31 @@ const CreateSectionModal = ({ open, close, data, create, update }) => {
   });
 
   useEffect(() => {
-    if (data) {
+    if (data && open) {
       form.setValues({
         name: data.name,
         archived: data.archived,
       });
+    } else {
+      form.resetForm();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
+  }, [data, open]);
+
+  const isChanged = useMemo(
+    () =>
+      (data && (
+        form.values.name !== data?.name ||
+        form.values.archived !== data?.archived
+      )) || (!data && (
+        form.values.name !== "" ||
+        form.values.archived !== false
+      ))
+    , [form.values, data]
+  );
 
   const handleSwitchArchived = () => {
-    if (form.values.archived) {
-      form.setFieldValue("archived", false);
-    } else {
-      form.setFieldValue("archived", true);
-    }
+    form.setFieldValue("archived", !form.values.archived);
   };
 
   return (
@@ -89,16 +93,11 @@ const CreateSectionModal = ({ open, close, data, create, update }) => {
               label={getLocaleString("common_table_archived")}
               sx={{ my: 1 }}
             />
-            <Button
-              fullWidth
-              type="submit"
-              variant="contained"
-              sx={{ textTransform: "capitalize" }}
-            >
-              {!editing
-                ? getLocaleString("common_create")
-                : getLocaleString("common_save")}
-            </Button>
+            <SubmitButton fullWidth type="submit" variant="contained" disabled={!isChanged}>
+              {editing
+                ? getLocaleString("common_save")
+                : getLocaleString("common_create")}
+            </SubmitButton>
           </form>
           <CloseButtonBox>
             <CloseIcon onClick={close} />

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-function usePopup(ref) {
+const usePopup = (ref) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleClickOutSideOfMenu = useCallback(
@@ -32,6 +32,6 @@ function usePopup(ref) {
     openMenu,
     toggleMenu,
   };
-}
+};
 
 export default usePopup;

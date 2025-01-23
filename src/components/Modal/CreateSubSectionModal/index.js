@@ -1,18 +1,12 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import * as Yup from "yup";
 import { useFormik } from "formik";
-import {
-  Box,
-  Button,
-  FormControlLabel,
-  Modal,
-  Switch,
-  TextField,
-} from "@mui/material";
+import { Box, FormControlLabel, Modal, Switch } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { CloseButtonBox, FormContainer } from "../style";
+import { CloseButtonBox, FormContainer, SubmitButton } from "../style";
+import { FormTextField } from "../../../pages/style";
 
 const validationSchema = Yup.object().shape({
   name: Yup.string().required("register_name_required"),
@@ -28,9 +22,8 @@ const CreateSubSectionModal = ({ open, close, data, create, update }) => {
   const handleSubmit = async (data) => {
     if (!editing) {
       create(data, id);
-      form.resetForm();
     } else {
-      update(subSectionId, data, form);
+      update(subSectionId, data, id);
     }
   };
 
@@ -45,13 +38,29 @@ const CreateSubSectionModal = ({ open, close, data, create, update }) => {
   });
 
   useEffect(() => {
-    form.setValues({
-      name: data?.name || "",
-      sectionId: data?.sectionId || null,
-      archived: data?.archived || false,
-    });
+    if (data && open) {
+      form.setValues({
+        name: data.name || "",
+        sectionId: data.sectionId || null,
+        archived: data.archived || false,
+      });
+    } else {
+      form.resetForm();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
+  }, [data, open]);
+
+  const isChanged = useMemo(
+    () =>
+      (data && (
+        form.values.name !== data?.name ||
+        form.values.archived !== data?.archived
+      )) || (!data && (
+        form.values.name !== "" ||
+        form.values.archived !== false
+      ))
+    , [form.values, data]
+  );
 
   const handleSwitchArchived = () => {
     if (form.values.archived) {
@@ -71,7 +80,7 @@ const CreateSubSectionModal = ({ open, close, data, create, update }) => {
       >
         <FormContainer>
           <form onSubmit={form.handleSubmit}>
-            <TextField
+            <FormTextField
               fullWidth
               label={getLocaleString("register_name_label")}
               placeholder={getLocaleString("register_name_placeholder")}
@@ -82,7 +91,6 @@ const CreateSubSectionModal = ({ open, close, data, create, update }) => {
               error={Boolean(
                 form.errors.name && form.touched.name ? form.errors.name : "",
               )}
-              sx={{ mb: 3 }}
             />
             <FormControlLabel
               control={
@@ -94,16 +102,11 @@ const CreateSubSectionModal = ({ open, close, data, create, update }) => {
               label={getLocaleString("common_table_archived")}
               sx={{ mb: 2 }}
             />
-            <Button
-              fullWidth
-              type="submit"
-              variant="contained"
-              sx={{ textTransform: "capitalize" }}
-            >
+            <SubmitButton fullWidth type="submit" variant="contained" disabled={!isChanged}>
               {!editing
                 ? getLocaleString("common_create")
                 : getLocaleString("common_save")}
-            </Button>
+            </SubmitButton>
           </form>
           <CloseButtonBox>
             <CloseIcon onClick={close} />

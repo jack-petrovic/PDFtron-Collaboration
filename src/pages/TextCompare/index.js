@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import CompareText from "../../components/CompareText";
 import "react-quill/dist/quill.snow.css";
-import { getAllPlans, getPrescription, ToastService } from "../../services";
+import { getAllPlans, getPrescription } from "../../services";
 import { UserRoles } from "../../constants";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import { CompareTextWrapper } from "./style";
@@ -60,12 +60,6 @@ const TextComparePage = () => {
     getAllPlans()
       .then((data) => {
         setPlans(data.rows);
-      })
-      .catch((err) => {
-        ToastService.showHttpError(
-          err,
-          getLocaleString("toast_load_plans_failed"),
-        );
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -77,11 +71,6 @@ const TextComparePage = () => {
       })
       .catch((err) => {
         console.log("err=>", err);
-        ToastService.error(
-          getLocaleString(
-            err.response?.data?.message || "common_network_error",
-          ),
-        );
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

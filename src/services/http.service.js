@@ -4,6 +4,8 @@ import { AuthService } from "./auth.service";
 import store from "../redux/store";
 import _ from "lodash";
 import { setToken, setAccount } from "../redux/actions";
+import { ToastService } from "./toast.service";
+import i18n from "../i18n";
 
 const http = axios.create({ baseURL: `${API_SERVER}/` });
 
@@ -43,7 +45,7 @@ const refreshTokens = (resolve, reject) => {
       if (reqQueue.length) {
         reqQueue[0].reject({
           ...err,
-          message: "Your session was expired, please login again.",
+          message: "Your session has expired, please login again.",
         });
       }
       reqQueue = [];
@@ -63,7 +65,7 @@ const httpResponseHandler = (response) => {
 const httpErrorHandler = async (err, refresh = true) => {
   const response = err?.response;
   if (response?.status === 403) {
-    err.response.data.message = "Your session was expired, please login again.";
+    err.response.data.message = "Your session has expired, please login again.";
     if (refresh) {
       return new Promise((resolve, reject) => {
         return refreshTokens(resolve, reject);
@@ -77,19 +79,22 @@ const httpErrorHandler = async (err, refresh = true) => {
         })
         .catch(async () => {
           triggerLogout();
+          ToastService.error(i18n.t(err.response?.data?.message || "common_network_error"));
           throw err;
         });
     }
 
     triggerLogout();
+    ToastService.error(i18n.t(err.response?.data?.message || "session_expired"));
     throw err;
   }
 
   store.dispatch(setToken(null));
+  ToastService.error(i18n.t(err.response?.data?.message || "common_network_error"));
   throw err;
 };
 
-async function request(method, url, options) {
+const request = async (method, url, options) => {
   const token = localStorage.getItem("access-token");
   const headers = options.headers || {};
 
@@ -105,26 +110,26 @@ async function request(method, url, options) {
     })
     .then(httpResponseHandler)
     .catch(httpErrorHandler);
-}
+};
 
-function get(url, params, headers) {
+const get = (url, params, headers) => {
   return request("GET", url, { params, headers });
-}
+};
 
-function post(url, body, headers) {
+const post = (url, body, headers) => {
   return request("POST", url, { data: body, headers });
-}
+};
 
-function put(url, body, headers) {
+const put = (url, body, headers) => {
   return request("PUT", url, { data: body, headers });
-}
+};
 
-function patch(url, body, headers) {
+const patch = (url, body, headers) => {
   return request("PATCH", url, { data: body, headers });
-}
+};
 
-function remove(url, body, headers) {
+const remove = (url, body, headers) => {
   return request("DELETE", url, { data: body, headers });
-}
+};
 
 export { get, post, put, patch, remove };

@@ -17,7 +17,6 @@ import HomeIcon from "@mui/icons-material/Home";
 import GroupIcon from "@mui/icons-material/Group";
 import DesignServicesIcon from "@mui/icons-material/DesignServices";
 import DescriptionIcon from "@mui/icons-material/Description";
-import AssignmentIcon from "@mui/icons-material/Assignment";
 import AutoAwesomeMotionIcon from "@mui/icons-material/AutoAwesomeMotion";
 import DvrIcon from "@mui/icons-material/Dvr";
 import SendIcon from "@mui/icons-material/Send";
@@ -37,7 +36,7 @@ import { GiPapers } from "react-icons/gi";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import { Functions, LocalPrintshop } from "@mui/icons-material";
 
-export default function Sidebar() {
+const Sidebar = () => {
   const navigate = useNavigate();
   const [state, setState] = useState(false);
   const [openedMenu, setOpenedMenu] = useState(null);
@@ -75,6 +74,7 @@ export default function Sidebar() {
         UserRoles.CHECKER,
         UserRoles.PLANNER,
         UserRoles.CORRECTOR,
+        UserRoles.PRINTER,
       ],
     },
     {
@@ -86,11 +86,12 @@ export default function Sidebar() {
         UserRoles.MASTER,
         UserRoles.CHECKER,
         UserRoles.CORRECTOR,
+        UserRoles.EDITOR,
       ],
     },
     {
       href: "/notification",
-      text: "notification",
+      text: "sidebar_notification",
       icon: <NotificationsIcon />,
       roles: [
         UserRoles.SUPERADMIN,
@@ -142,7 +143,7 @@ export default function Sidebar() {
           href: "/management/paper-size",
           text: "sidebar_paper_size",
           icon: <GiPapers />,
-          roles: [UserRoles.SUPERADMIN, UserRoles.ADMIN],
+          roles: [UserRoles.SUPERADMIN, UserRoles.ADMIN, UserRoles.SUPERMASTER],
         },
         {
           href: "/management/section",
@@ -174,7 +175,7 @@ export default function Sidebar() {
         },
         {
           href: "/management/generation-logs",
-          text: "common_generation_logs",
+          text: "sidebar_generation_logs",
           icon: <TimeLineIcon />,
           roles: [
             UserRoles.SUPERADMIN,
@@ -202,9 +203,9 @@ export default function Sidebar() {
           roles: [UserRoles.PRINTER],
         },
         {
-          href: "/management/print-logs",
-          text: "sidebar_print_logs",
-          icon: <LocalPrintshop />,
+          href: "/management/paper-consumption",
+          text: "sidebar_paper_consumption",
+          icon: <Functions />,
           roles: [
             UserRoles.SUPERADMIN,
             UserRoles.ADMIN,
@@ -216,19 +217,6 @@ export default function Sidebar() {
             UserRoles.PLANNER,
             UserRoles.PRINTER,
             UserRoles.CORRECTOR,
-          ],
-        },
-        {
-          href: "/management/paper-consumption",
-          text: "sidebar_paper_consumption",
-          icon: <Functions />,
-          roles: [
-            UserRoles.SUPERADMIN,
-            UserRoles.ADMIN,
-            UserRoles.SUPERMASTER,
-            UserRoles.MASTER,
-            UserRoles.SUBMASTER,
-            UserRoles.PRINTER,
           ],
         },
         {
@@ -252,12 +240,6 @@ export default function Sidebar() {
             UserRoles.SUPERMASTER,
             UserRoles.PLANNER,
           ],
-        },
-        {
-          href: "/management/signed-document",
-          text: "sidebar_signed_documents",
-          icon: <AssignmentIcon />,
-          roles: [UserRoles.SUPERADMIN, UserRoles.ADMIN, UserRoles.SUPERMASTER],
         },
       ],
     },
@@ -359,4 +341,6 @@ export default function Sidebar() {
       </Drawer>
     </React.Fragment>
   );
-}
+};
+
+export default Sidebar;

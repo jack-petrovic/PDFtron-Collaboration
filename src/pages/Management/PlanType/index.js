@@ -8,14 +8,12 @@ import {
   removePlanType,
 } from "../../../redux/actions";
 import { useAuthState } from "../../../hooks/redux";
-import { Box, Button, Chip, Menu, Pagination, Typography } from "@mui/material";
+import { Box, Button, Menu, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SubdirectoryArrowRightIcon from "@mui/icons-material/SubdirectoryArrowRight";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import moment from "moment";
 import CustomDataGrid from "../../../components/common/DataGrid";
 import CreateTypeModal from "../../../components/Modal/CreateTypeModal";
@@ -31,9 +29,14 @@ import {
 import {
   ActionMenuButtonWrapper,
   ActionMenuItem,
+  ArchivedChip,
+  ArchivedIcon,
   ContentHeader,
   ContentWrapper,
+  MenuItemButton,
+  MoreActionsIcon,
 } from "../../style";
+import debounce from "lodash/debounce";
 
 const PlanType = () => {
   const { t } = useTranslation();
@@ -45,13 +48,17 @@ const PlanType = () => {
   const [activeType, setActiveType] = useState(null);
   const [activeRow, setActiveRow] = useState(null);
   const isOpen = Boolean(anchorEl);
-  const pageSize = 10;
-  const [page, setPage] = useState(1);
-  const [totalPage, setTotalPage] = useState();
+  const [rowLength, setRowLength] = useState(0);
   const { account } = useAuthState();
   const [filterModel, setFilterModel] = useState({ items: [] });
   const [openRemoveModal, setOpenRemoveModal] = useState(false);
   const [removeItem, setRemoveItem] = useState(undefined);
+
+  const [paginationModel, setPaginationModel] = useState({
+    pageSize: 10,
+    page: 0,
+  });
+
   const getLocaleString = (key) => t(key);
   const handleClick = (event, row) => {
     setActiveRow(row);
@@ -73,21 +80,24 @@ const PlanType = () => {
   };
 
   const getAllTypes = useCallback(() => {
-    let query = {};
-    query.pageSize = pageSize;
-    query.page = page;
-    query.filters = filterModel.items.map((item) => ({
-      field: item.field,
-      operator: item.operator,
-      value: item.value,
-    }));
-    query.filtersOperator = filterModel.logicOperator;
+    let query = {
+      pageSize: paginationModel.pageSize,
+      page: paginationModel.page,
+      filters: filterModel.items.map((item) => ({
+        field: item.field,
+        operator: item.operator,
+        value: item.value,
+      })),
+      filtersOperator: filterModel.logicOperator,
+    };
     return getTypes(query);
-  }, [pageSize, page, filterModel]);
+  }, [filterModel, paginationModel]);
 
   const handleChangedSearch = (filter) => {
     setFilterModel(filter);
   };
+
+  const handleDebounceChangeSearch = debounce(handleChangedSearch, 500);
 
   useEffect(() => {
     if (
@@ -104,51 +114,33 @@ const PlanType = () => {
     }
     getAllTypes()
       .then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
+        setRowLength(data.count);
         setTypes(data.rows);
-      })
-      .catch((err) => {
-        console.log("err=>", err);
-        ToastService.error(getLocaleString("toast_load_plan_types_failed"));
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getAllTypes, filterModel]);
+  }, [getAllTypes, filterModel, paginationModel]);
 
   const handleCreate = async (data) => {
-    try {
-      await createType(data).then((res) => {
-        ToastService.success(getLocaleString("toast_create_plan_type_success"));
-        dispatch(addPlanType(res));
-      });
-      await getAllTypes().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setTypes(data.rows);
-      });
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
+    await createType(data).then((res) => {
+      ToastService.success(getLocaleString("toast_create_plan_type_success"));
+      dispatch(addPlanType(res));
+    });
+    await getAllTypes().then((data) => {
+      setRowLength(data.count);
+      setTypes(data.rows);
+    });
     setOpenModal(false);
   };
 
   const handleUpdate = async (id, data) => {
-    try {
-      await updateType(id, data).then((res) => {
-        dispatch(editPlanType(res));
-        ToastService.success(getLocaleString("toast_update_plan_type_success"));
-      });
-      await getAllTypes().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setTypes(data.rows);
-      });
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
+    await updateType(id, data).then((res) => {
+      dispatch(editPlanType(res));
+      ToastService.success(getLocaleString("toast_update_plan_type_success"));
+    });
+    await getAllTypes().then((data) => {
+      setRowLength(data.count);
+      setTypes(data.rows);
+    });
     setOpenModal(false);
   };
 
@@ -169,27 +161,18 @@ const PlanType = () => {
   };
 
   const handleRemoveType = async () => {
-    try {
-      await deleteType(removeItem.id).then((res) => {
-        dispatch(removePlanType(removeItem.id));
-        ToastService.success(getLocaleString(res.message));
-      });
-      await getAllTypes().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setTypes(data.rows);
-      });
-    } catch (err) {
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
+    await deleteType(removeItem.id).then((res) => {
+      dispatch(removePlanType(removeItem.id));
+      ToastService.success(getLocaleString(res.message));
+    });
+    await getAllTypes().then((data) => {
+      setRowLength(data.count);
+      setTypes(data.rows);
+    });
     handleClose();
     setOpenRemoveModal(false);
   };
 
-  const handleChangePage = (event, value) => {
-    setPage(value);
-  };
 
   const goToSubPlanTypePage = (item) => {
     navigate(`/management/plan-types/${item.id}`);
@@ -205,7 +188,7 @@ const PlanType = () => {
           aria-expanded={isOpen ? "true" : undefined}
           onClick={(event) => handleClick(event, row)}
         >
-          <MoreVertIcon sx={{ color: "gray" }} />
+          <MoreActionsIcon />
         </Button>
       </ActionMenuButtonWrapper>
     );
@@ -218,21 +201,22 @@ const PlanType = () => {
       editable: false,
       filterable: false,
       flex: 1,
+      minWidth: 100,
     },
     {
       field: "name",
       headerName: getLocaleString("common_table_name"),
       editable: false,
       flex: 3,
+      minWidth: 250,
       renderCell: ({ row }) => (
         <React.Fragment key={row.no}>
           {row.name}
           {row.archived && (
-            <Chip
+            <ArchivedChip
               label={getLocaleString("common_table_archived")}
-              icon={<WarningAmberIcon sx={{ fontSize: "16px" }} />}
+              icon={<ArchivedIcon />}
               color="warning"
-              sx={{ marginLeft: "0.5rem" }}
             />
           )}
         </React.Fragment>
@@ -244,6 +228,7 @@ const PlanType = () => {
       editable: false,
       type: "boolean",
       flex: 1,
+      minWidth: 150,
     },
     {
       field: "createdAt",
@@ -251,6 +236,7 @@ const PlanType = () => {
       editable: false,
       type: "date",
       flex: 1,
+      minWidth: 150,
       renderCell: ({ row }) =>
         moment(row.createdAt).utc(false).format("YYYY-MM-DD"),
     },
@@ -260,22 +246,24 @@ const PlanType = () => {
       editable: false,
       type: "date",
       flex: 1,
+      minWidth: 150,
       renderCell: ({ row }) =>
         moment(row.updatedAt).utc(false).format("YYYY-MM-DD"),
     },
     {
       field: "action",
-      headerName: "",
+      headerName: getLocaleString("common_table_action"),
       editable: false,
       filterable: false,
-      flex: 1,
+      sortable: false,
+      width: 100,
       renderCell,
     },
   ];
 
   const rows = types.map((item, index) => ({
     ...item,
-    no: (page - 1) * pageSize + index + 1,
+    no: paginationModel.page * paginationModel.pageSize + index + 1,
     archived: item.archived,
     createdAt: moment(item.createdAt).toDate(),
     updatedAt: moment(item.updatedAt).toDate(),
@@ -288,45 +276,41 @@ const PlanType = () => {
   return (
     <ContentWrapper>
       <ContentHeader>
-        <Box>
+        <Box className="mr-2">
           <Typography variant="h5">
             {getLocaleString("plan_type_page_title")}
           </Typography>
         </Box>
-        <Box display="flex" justifyContent="between" gap="4px">
-          <Button
+        <Box className="sm:flex justify-between gap-1">
+          <MenuItemButton
             variant="outlined"
             startIcon={<AddIcon />}
             onClick={handleOpenModal}
+            className="w-full sm:w-auto"
           >
             {getLocaleString("common_create")}
-          </Button>
-          <Button
+          </MenuItemButton>
+          <MenuItemButton
             variant="outlined"
             startIcon={<ArrowBackIosIcon />}
             color="secondary"
             onClick={handleGoBack}
+            className="w-full sm:w-auto"
           >
             {getLocaleString("common_go_back")}
-          </Button>
+          </MenuItemButton>
         </Box>
       </ContentHeader>
       <CustomDataGrid
         rows={rows}
         columns={typeTableColumns}
         filterMode="server"
+        rowLength={rowLength}
+        onPaginationModelChange={setPaginationModel}
+        paginationModel={paginationModel}
         filterModel={filterModel}
-        onFilterChanged={(filter) => handleChangedSearch(filter)}
+        onFilterChanged={handleDebounceChangeSearch}
       />
-      <Box display="flex" alignItems="center" justifyContent="center" pt={4}>
-        <Pagination
-          color="primary"
-          shape="rounded"
-          count={totalPage}
-          page={page}
-          onChange={handleChangePage}
-        />
-      </Box>
       {isOpen && (
         <Menu
           id="basic-menu"
@@ -338,19 +322,17 @@ const PlanType = () => {
           }}
         >
           <ActionMenuItem onClick={() => handleEditType(activeRow)}>
-            <EditIcon sx={{ marginRight: "1rem", color: "gray" }} />
+            <EditIcon className="menu-icon" />
             {getLocaleString("common_edit")}
           </ActionMenuItem>
           {account.role.name === UserRoles.SUPERADMIN && (
             <ActionMenuItem onClick={() => handleOpenRemoveModal(activeRow)}>
-              <DeleteIcon sx={{ marginRight: "1rem", color: "gray" }} />
+              <DeleteIcon className="menu-icon" />
               {getLocaleString("common_delete")}
             </ActionMenuItem>
           )}
           <ActionMenuItem onClick={() => goToSubPlanTypePage(activeRow)}>
-            <SubdirectoryArrowRightIcon
-              sx={{ marginRight: "1rem", color: "gray" }}
-            />
+            <SubdirectoryArrowRightIcon className="menu-icon" />
             {getLocaleString("type_go_to_sub_type")}
           </ActionMenuItem>
         </Menu>

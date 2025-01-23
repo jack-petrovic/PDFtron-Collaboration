@@ -9,11 +9,12 @@ import {
   Typography,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
-import styles from "./styles";
+import { useTranslation } from "react-i18next";
 
 const FilterPanel = ({ filter, onChangeFilter }) => {
   const [sectionId, setSectionId] = useState(0);
   const [subSection, setSubSection] = useState("");
+  const { t } = useTranslation();
   const sections = useSelector((state) => state.sectionReducer.sections);
   const subSections = useSelector(
     (state) => state.subSectionReducer.subSections,
@@ -43,25 +44,27 @@ const FilterPanel = ({ filter, onChangeFilter }) => {
   }, [sectionId, subSections]);
 
   return (
-    <Box sx={styles.root}>
-      <Typography marginBottom={2} variant="subtitle2" sx={styles.label}>
-        Please select filter conditions:
+    <Box className="rounded-lg border-2 border-[#d4d4d4] p-5 m-6">
+      <Typography marginBottom={2} variant="subtitle2" className="text-[#3c3c3c]">
+        {t("print_request_filter_condition")}
       </Typography>
-      <Box display="flex" gap={2}>
+      <Box className="sm:flex columns-3 gap-2">
         <DatePicker
           format="yyyy-M"
           label="Month"
+          className="w-full"
           value={filter.date}
           onChange={(value) => onChangeFilter("date", value)}
         />
-        <FormControl variant="filled" sx={styles.select}>
-          <InputLabel size="small">Section</InputLabel>
+        <FormControl variant="filled" className="w-full">
+          <InputLabel size="small">{t("common_table_section")}</InputLabel>
           <Select
             value={filter.section}
             onChange={handleChangeSectionId}
             aria-label="Select Section"
+            className="w-full"
           >
-            <MenuItem value="">No select ...</MenuItem>
+            <MenuItem value="">{t("print_request_no_select")}</MenuItem>
             {sections.map((option) => (
               <MenuItem key={option.id} value={option.name}>
                 {option.name}
@@ -70,12 +73,13 @@ const FilterPanel = ({ filter, onChangeFilter }) => {
           </Select>
         </FormControl>
         {filter.section && (
-          <FormControl variant="filled" sx={styles.select}>
+          <FormControl variant="filled" className="w-full">
             <InputLabel size="small">Sub Section</InputLabel>
             <Select
               value={subSection}
               onChange={handleChangeSubSectionId}
               aria-label="Select Sub Section"
+              className="w-full"
             >
               <MenuItem value="">No select ...</MenuItem>
               {availableSubSections.map((option) => (

@@ -8,9 +8,11 @@ const Collaboration = () => {
   const [file, setFile] = useState(null);
 
   useEffect(() => {
-    getDocument(documentId).then((res) => {
-      setFile(res.doc);
-    });
+    getDocument(documentId)
+      .then((res) => {
+        setFile(res.doc);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentId]);
 
   return (

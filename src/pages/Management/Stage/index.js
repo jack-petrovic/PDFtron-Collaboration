@@ -4,9 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useDispatch } from "react-redux";
 import { useAuthState } from "../../../hooks/redux";
 import { addStage, editStage, removeStage } from "../../../redux/actions";
-import { Box, Button, Menu, Pagination, Typography } from "@mui/material";
+import { Box, Button, Menu, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SortIcon from "@mui/icons-material/Sort";
@@ -16,7 +15,7 @@ import CustomDataGrid from "../../../components/common/DataGrid";
 import CreateStageModal from "../../../components/Modal/CreateStageModal";
 import ArrangeOrderModal from "../../../components/Modal/ArrangeOrderModal";
 import ConfirmModal from "../../../components/Modal/ConfirmModal";
-import { UserRoles } from "../../../constants";
+import { StageMode, UserRoles } from "../../../constants";
 import {
   createStage,
   deleteStage,
@@ -30,7 +29,10 @@ import {
   ActionMenuItem,
   ContentHeader,
   ContentWrapper,
+  MenuItemButton,
+  MoreActionsIcon,
 } from "../../style";
+import debounce from "lodash/debounce";
 
 const Stage = () => {
   const { t } = useTranslation();
@@ -41,10 +43,8 @@ const Stage = () => {
   const [activeStage, setActiveStage] = useState(null);
   const [openArrangeModal, setOpenArrangeModal] = useState(false);
   const [activeRow, setActiveRow] = useState(null);
+  const [rowLength, setRowLength] = useState(0);
   const isOpen = Boolean(anchorEl);
-  const pageSize = 10;
-  const [page, setPage] = useState(1);
-  const [totalPage, setTotalPage] = useState();
   const { account } = useAuthState();
   const [filterModel, setFilterModel] = useState({ items: [] });
   const [removeItem, setRemoveItem] = useState(undefined);
@@ -52,6 +52,11 @@ const Stage = () => {
   const [allStages, setAllStages] = useState([]);
   const [stages, setStages] = useState([]);
   const getLocaleString = (key) => t(key);
+
+  const [paginationModel, setPaginationModel] = useState({
+    pageSize: 10,
+    page: 0,
+  });
 
   const handleClick = (event, row) => {
     setActiveRow(row);
@@ -72,31 +77,29 @@ const Stage = () => {
       })
       .catch((err) => {
         console.log("err=>", err);
-        ToastService.error(
-          getLocaleString(
-            err.response?.data?.message || "common_network_error",
-          ),
-        );
       });
     setOpenArrangeModal(true);
   };
 
   const getAllStages = useCallback(() => {
-    let query = {};
-    query.pageSize = pageSize;
-    query.page = page;
-    query.filters = filterModel.items.map((item) => ({
-      field: item.field,
-      operator: item.operator,
-      value: item.value,
-    }));
-    query.filtersOperator = filterModel.logicOperator;
+    let query = {
+      pageSize: paginationModel.pageSize,
+      page: paginationModel.page,
+      filters: filterModel.items.map((item) => ({
+        field: item.field,
+        operator: item.operator,
+        value: item.value,
+      })),
+      filtersOperator: filterModel.logicOperator,
+    };
     return getStages(query);
-  }, [filterModel, pageSize, page]);
+  }, [filterModel, paginationModel]);
 
   const handleChangedSearch = (filter) => {
     setFilterModel(filter);
   };
+
+  const handleDebounceChangeSearch = debounce(handleChangedSearch, 500);
 
   useEffect(() => {
     if (
@@ -113,50 +116,39 @@ const Stage = () => {
     }
     getAllStages()
       .then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
+        setRowLength(data.count);
         setStages(data.rows);
       })
       .catch((err) => {
         console.log("err=>", err);
-        ToastService.error(getLocaleString("toast_load_stages_failed"));
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getAllStages, filterModel]);
+  }, [getAllStages, filterModel, paginationModel]);
 
   const handleCreate = async (data) => {
-    try {
-      await createStage(data).then((res) => {
+    await createStage(data)
+      .then((res) => {
         ToastService.success(getLocaleString("toast_create_stage_success"));
         dispatch(addStage(res));
         handleOpenArrangeModal();
       });
       await getAllStages().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
+        setRowLength(data.count);
         setStages(data.rows);
       });
-    } catch (err) {
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
     setOpenModal(false);
   };
 
   const handleUpdate = async (id, data) => {
-    try {
-      await updateStage(id, data).then((res) => {
+    await updateStage(id, data)
+      .then((res) => {
         dispatch(editStage(res));
         ToastService.success(getLocaleString("toast_update_stage_success"));
       });
       await getAllStages().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
+        setRowLength(data.count);
         setStages(data.rows);
       });
-    } catch (err) {
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
     setOpenModal(false);
   };
 
@@ -177,23 +169,17 @@ const Stage = () => {
   };
 
   const handleRemoveStage = async () => {
-    try {
-      await deleteStage(removeItem.id).then((res) => {
+    await deleteStage(removeItem.id)
+      .then((res) => {
         dispatch(removeStage(removeItem.id));
         ToastService.success(getLocaleString(res.message));
       });
       await getAllStages().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
+        setRowLength(data.count);
         setStages(data.rows);
       });
-      handleClose();
-      setOpenRemoveModal(false);
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
+    handleClose();
+    setOpenRemoveModal(false);
   };
 
   const handleCloseArrangeModal = () => {
@@ -205,39 +191,34 @@ const Stage = () => {
       ...stage,
       order: index + 1,
     }));
-    try {
-      await updateAllStages(orderedStages).then((res) => {
+    await updateAllStages(orderedStages)
+      .then((res) => {
         ToastService.success(getLocaleString(res.message));
       });
       await getAllStages().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
+        setRowLength(data.count);
         setStages(data.rows);
+        data.rows.map((item) => {
+          dispatch(editStage(item));
+        })
       });
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
-  };
-
-  const handleChangePage = (event, value) => {
-    setPage(value);
   };
 
   const renderCell = ({ row }) => {
     return (
-      <ActionMenuButtonWrapper>
-        <Button
-          id="basic-button"
-          aria-controls="basic-menu"
-          aria-haspopup="true"
-          aria-expanded={isOpen ? "true" : undefined}
-          onClick={(event) => handleClick(event, row)}
-        >
-          <MoreVertIcon sx={{ color: "gray" }} />
-        </Button>
-      </ActionMenuButtonWrapper>
+      row.stageMode !== StageMode.PRESCRIPTIONMODE && (
+        <ActionMenuButtonWrapper>
+          <Button
+            id="basic-button"
+            aria-controls="basic-menu"
+            aria-haspopup="true"
+            aria-expanded={isOpen}
+            onClick={(event) => handleClick(event, row)}
+          >
+            <MoreActionsIcon />
+          </Button>
+        </ActionMenuButtonWrapper>
+      )
     );
   };
 
@@ -247,13 +228,15 @@ const Stage = () => {
       headerName: getLocaleString("common_table_number"),
       editable: false,
       filterable: false,
-      flex: 0.5,
+      flex: 1,
+      minWidth: 100,
     },
     {
       field: "stageMode",
       headerName: getLocaleString("common_table_mode"),
       editable: false,
-      flex: 1,
+      flex: 3,
+      minWidth: 250,
     },
     {
       field: "enabled",
@@ -261,20 +244,15 @@ const Stage = () => {
       editable: false,
       filterable: false,
       type: "boolean",
-      flex: 0.5,
+      flex: 1,
+      minWidth: 100,
     },
     {
       field: "order",
       headerName: getLocaleString("common_table_order"),
       editable: false,
-      flex: 0.5,
-    },
-    {
-      field: "printPermission",
-      headerName: getLocaleString("common_table_print_enable"),
-      editable: false,
-      type: "boolean",
       flex: 1,
+      minWidth: 100,
     },
     {
       field: "createdAt",
@@ -282,6 +260,7 @@ const Stage = () => {
       editable: false,
       type: "date",
       flex: 1,
+      minWidth: 100,
       renderCell: ({ row }) =>
         moment(row.createdAt).utc(false).format("YYYY-MM-DD"),
     },
@@ -291,22 +270,24 @@ const Stage = () => {
       editable: false,
       type: "date",
       flex: 1,
+      minWidth: 100,
       renderCell: ({ row }) =>
         moment(row.updatedAt).utc(false).format("YYYY-MM-DD"),
     },
     {
       field: "action",
-      headerName: "",
+      headerName: getLocaleString("common_table_action"),
       editable: false,
       filterable: false,
-      flex: 1,
+      sortable: false,
+      width: 100,
       renderCell,
     },
   ];
 
   const rows = stages.map((item, index) => ({
     ...item,
-    no: (page - 1) * pageSize + index + 1,
+    no: paginationModel.page * paginationModel.pageSize + index + 1,
     createdAt: moment(item.createdAt).toDate(),
     updatedAt: moment(item.updatedAt).toDate(),
   }));
@@ -318,52 +299,49 @@ const Stage = () => {
   return (
     <ContentWrapper>
       <ContentHeader>
-        <Box>
+        <Box className="mr-2">
           <Typography variant="h5">
             {getLocaleString("stage_page_title")}
           </Typography>
         </Box>
-        <Box display="flex" justifyContent="between" gap="4px">
-          <Button
+        <Box className="sm:flex justify-between gap-1">
+          <MenuItemButton
             variant="outlined"
             startIcon={<SortIcon />}
             onClick={handleOpenArrangeModal}
+            className="w-full sm:w-auto"
           >
             {getLocaleString("common_table_arrange_order")}
-          </Button>
-          <Button
+          </MenuItemButton>
+          <MenuItemButton
             variant="outlined"
             startIcon={<AddIcon />}
             onClick={handleOpenModal}
+            className="w-full sm:w-auto"
           >
             {getLocaleString("common_create")}
-          </Button>
-          <Button
+          </MenuItemButton>
+          <MenuItemButton
             variant="outlined"
             startIcon={<ArrowBackIosIcon />}
             color="secondary"
             onClick={handleGoBack}
+            className="w-full sm:w-auto"
           >
             {getLocaleString("common_go_back")}
-          </Button>
+          </MenuItemButton>
         </Box>
       </ContentHeader>
       <CustomDataGrid
         rows={rows}
         columns={stageTableColumns}
         filterMode="server"
+        rowLength={rowLength}
+        onPaginationModelChange={setPaginationModel}
+        paginationModel={paginationModel}
         filterModel={filterModel}
-        onFilterChanged={(filter) => handleChangedSearch(filter)}
+        onFilterChanged={handleDebounceChangeSearch}
       />
-      <Box display="flex" alignItems="center" justifyContent="center" pt={4}>
-        <Pagination
-          color="primary"
-          shape="rounded"
-          count={totalPage}
-          page={page}
-          onChange={handleChangePage}
-        />
-      </Box>
       {isOpen && (
         <Menu
           id="basic-menu"
@@ -374,13 +352,15 @@ const Stage = () => {
             "aria-labelledby": "basic-button",
           }}
         >
-          <ActionMenuItem onClick={() => handleEditStage(activeRow)}>
-            <EditIcon sx={{ marginRight: "1rem", color: "gray" }} />
-            {getLocaleString("common_edit")}
-          </ActionMenuItem>
+          {activeRow.stageMode !== StageMode.PRESCRIPTIONMODE && (
+            <ActionMenuItem onClick={() => handleEditStage(activeRow)}>
+              <EditIcon className="menu-icon" />
+              {getLocaleString("common_edit")}
+            </ActionMenuItem>
+          )}
           {account.role.name === UserRoles.SUPERADMIN && (
             <ActionMenuItem onClick={() => handleOpenRemoveModal(activeRow)}>
-              <DeleteIcon sx={{ marginRight: "1rem", color: "gray" }} />
+              <DeleteIcon className="menu-icon" />
               {getLocaleString("common_delete")}
             </ActionMenuItem>
           )}

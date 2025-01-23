@@ -4,18 +4,16 @@
 
 .zoom-bar {
   background: #ededed;
-  height: 40px;
-  line-height: 40px;
-  padding: 5px 10px;
+  height: 80px;
+  padding: 2px 10px;
 }
 
 .radio-label {
   box-sizing: border-box;
   cursor: pointer;
   display: inline-block;
-  height: 30px;
-  line-height: 28px;
-  margin-left: 6px;
+  margin: 0 0.2rem;
+  padding: 0.2rem;
   text-align: center;
   width: 70px;
 
@@ -59,4 +57,10 @@
 
 .gantt_add {
   display: none;
+}
+
+.filter_label {
+  font-weight: normal;
+  color: black;
+  font-size: 1.1rem;
 }

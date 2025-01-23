@@ -8,26 +8,25 @@ const CustomDataGrid = ({
   columns,
   filterModel,
   filterMode = "client",
+  paginationModel,
+  rowLength,
+  onPaginationModelChange,
   onFilterChanged,
 }) => {
   const { t } = useTranslation();
+  const pageOptions = [10, 25, 50, 100];
   const getLocaleString = (key) => t(key);
 
   const localeText = useMemo(
     () => ({
       toolbarColumns: getLocaleString("common_columns"),
+      noRowsLabel: getLocaleString("common_no_rows"),
       columnsManagementSearchTitle: getLocaleString("columns_search_title"),
       columnsManagementReset: getLocaleString("columns_reset"),
-      columnsManagementShowHideAllText: getLocaleString(
-        "columns_show_all_text",
-      ),
+      columnsManagementShowHideAllText: getLocaleString("columns_show_all_text"),
       toolbarFilters: getLocaleString("common_filters"),
-      filterPanelAddFilter: getLocaleString(
-        "data_grid_table_add_filter_button",
-      ),
-      filterPanelRemoveAll: getLocaleString(
-        "data_grid_table_delete_filters_button",
-      ),
+      filterPanelAddFilter: getLocaleString("data_grid_table_add_filter_button"),
+      filterPanelRemoveAll: getLocaleString("data_grid_table_delete_filters_button"),
       filterPanelColumns: getLocaleString("filter_columns"),
       filterPanelOperator: getLocaleString("filter_operator"),
       filterOperatorContains: getLocaleString("filter_contain"),
@@ -54,6 +53,7 @@ const CustomDataGrid = ({
       columnMenuFilter: getLocaleString("menu_filter"),
       columnMenuManageColumns: getLocaleString("menu_manage_columns"),
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [t],
   );
 
@@ -65,10 +65,25 @@ const CustomDataGrid = ({
         className="data-grid"
         rows={rows}
         columns={columns}
-        style={{ height: hasRows ? "auto" : "20vh" }}
+        scrollbarSize={50}
+        style={{ height: hasRows ? "auto" : "50vh" }}
         localeText={localeText}
         slots={{ toolbar: GridToolbar }}
-        hideFooter
+        slotProps={{
+          toolbar: {
+            printOptions: {
+              disableToolbarButton: true,
+            },
+          },
+        }}
+        pagination
+        pageSizeOptions={pageOptions}
+        paginationModel={paginationModel}
+        onPaginationModelChange={onPaginationModelChange}
+        rowCount={rowLength}
+        paginationMode="server"
+        initialState={{ pinnedColumns: { right: ["action"] } }}
+        hideFooter={false}
         filterMode={filterMode}
         filterModel={filterModel}
         onFilterModelChange={onFilterChanged}

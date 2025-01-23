@@ -5,7 +5,6 @@ export * from "./document.service";
 export * from "./management/section.service";
 export * from "./management/sub-section.service";
 export * from "./annotation.service";
-export * from "./management/signedDocument.service";
 export * from "./toast.service";
 export * from "./management/plan.service";
 export * from "./management/fixedPlan.service";
