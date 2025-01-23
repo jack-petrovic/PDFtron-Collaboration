@@ -954,15 +954,7 @@
       "Friday",
       "Saturday"
     ],
-    "weekdaysShort": [
-      "Sun",
-      "Mon",
-      "Tue",
-      "Wed",
-      "Thu",
-      "Fri",
-      "Sat"
-    ],
+    "weekdaysShort": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
     "today": "Today",
     "invalidDateTime": "Invalid Date/Time: Input should match format"
   },

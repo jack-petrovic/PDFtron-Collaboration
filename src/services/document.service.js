@@ -30,7 +30,7 @@ export const getDocuments = (query = {}, showSpinner = true) => {
   return get("/document", query, {}, showSpinner);
 };
 
-export const getDocumentUrl = (id, showSpinner = true) => {
+export const getSingleDocument = (id, showSpinner = true) => {
   return get(`/document/url/${id}`, {}, showSpinner);
 };
 

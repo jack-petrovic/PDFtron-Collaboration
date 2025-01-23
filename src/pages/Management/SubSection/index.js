@@ -1,18 +1,16 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   addSubSection,
   editSubSection,
   removeSubSection,
 } from "../../../redux/actions";
-import { Box, Menu, Typography, Button, Pagination, Chip } from "@mui/material";
+import { Box, Menu, Typography, Button } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import moment from "moment";
 import CustomDataGrid from "../../../components/common/DataGrid";
 import CreateSubSectionModal from "../../../components/Modal/CreateSubSectionModal";
@@ -26,13 +24,18 @@ import {
 import {
   ActionMenuButtonWrapper,
   ActionMenuItem,
+  ArchivedChip,
+  ArchivedIcon,
   ContentHeader,
   ContentWrapper,
+  MenuItemButton,
+  MoreActionsIcon,
 } from "../../style";
 import ConfirmModal from "../../../components/Modal/ConfirmModal";
 import { UserRoles } from "../../../constants";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useAuthState } from "../../../hooks/redux";
+import debounce from "lodash/debounce";
 
 const SubSection = () => {
   const { t } = useTranslation();
@@ -41,19 +44,30 @@ const SubSection = () => {
   const location = useLocation();
   const { id } = useParams();
   const [subSections, setSubSections] = useState([]);
-  const [page, setPage] = useState(1);
   const [openModal, setOpenModal] = useState(false);
   const [activeSubSection, setActiveSubSection] = useState(null);
   const [activeRow, setActiveRow] = useState(null);
-  const pageSize = 10;
-  const [totalPage, setTotalPage] = useState(0);
+  const [rowLength, setRowLength] = useState(0);
   const [anchorEl, setAnchorEl] = useState(null);
   const [openRemoveModal, setOpenRemoveModal] = useState(false);
   const [removeItem, setRemoveItem] = useState(undefined);
   const [filterModel, setFilterModel] = useState({ items: [] });
   const isOpen = Boolean(anchorEl);
   const { account } = useAuthState();
+  const [sectionName, setSectionName] = useState("");
+  const sections = useSelector((state) => state.sectionReducer.sections);
+
+  const [paginationModel, setPaginationModel] = useState({
+    pageSize: 10,
+    page: 0,
+  });
+
   const getLocaleString = (key) => t(key);
+
+  useEffect(() => {
+    setSectionName(sections.find((item) => item?.id === id)?.name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const handleClick = (event, row) => {
     setAnchorEl(event.currentTarget);
@@ -73,24 +87,27 @@ const SubSection = () => {
     setOpenModal(false);
   };
 
-  const handleChangeSearch = (filter) => {
+  const handleChangedSearch = (filter) => {
     setFilterModel(filter);
   };
 
+  const handleDebounceChangeSearch = debounce(handleChangedSearch, 500);
+
   const getAllSubSections = useCallback(() => {
-    let query = {};
-    query.id = id;
-    query.pageSize = pageSize;
-    query.page = page;
-    query.filters = filterModel.items.map((item) => ({
-      field: item.field,
-      operator: item.operator,
-      value: item.value,
-    }));
-    query.filtersOperator = filterModel.logicOperator;
+    let query = {
+      id: id,
+      pageSize: paginationModel.pageSize,
+      page: paginationModel.page,
+      filters: filterModel.items.map((item) => ({
+        field: item.field,
+        operator: item.operator,
+        value: item.value,
+      })),
+      filtersOperator: filterModel.logicOperator,
+    };
     return getSubSections(query);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterModel, pageSize, page]);
+  }, [filterModel, paginationModel]);
 
   useEffect(() => {
     if (
@@ -107,17 +124,11 @@ const SubSection = () => {
     }
     getAllSubSections()
       .then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
+        setRowLength(data.count);
         setSubSections(data.rows);
-      })
-      .catch((err) => {
-        ToastService.showHttpError(
-          err,
-          getLocaleString("toast_load_sub_sections_failed"),
-        );
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getAllSubSections, filterModel]);
+  }, [getAllSubSections, filterModel, paginationModel]);
 
   const handleEditSubSection = (subSection) => {
     setOpenModal(true);
@@ -136,75 +147,50 @@ const SubSection = () => {
   };
 
   const handleRemoveSubSection = async () => {
-    try {
-      await deleteSubSection(removeItem.id).then((res) => {
-        dispatch(removeSubSection(removeItem.id));
-        ToastService.success(getLocaleString(res.message));
-      });
-      await getAllSubSections().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setSubSections(data.rows);
-      });
-    } catch (err) {
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
+    await deleteSubSection(removeItem.id).then((res) => {
+      dispatch(removeSubSection(removeItem.id));
+      ToastService.success(getLocaleString(res.message));
+    });
+    await getAllSubSections().then((data) => {
+      setRowLength(data.count);
+      setSubSections(data.rows);
+    });
     handleClose();
     setOpenRemoveModal(false);
   };
 
   const handleCreateSubSection = async (data, id) => {
-    try {
-      await createSubSection({
-        ...data,
-        sectionId: id,
-      }).then((res) => {
-        ToastService.success(
-          getLocaleString("toast_create_sub_section_success"),
-        );
-        dispatch(addSubSection(res));
-      });
-      await getAllSubSections().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setSubSections(data.rows);
-      });
-      handleCloseModal();
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
+    await createSubSection({
+      ...data,
+      sectionId: id,
+    }).then((res) => {
+      ToastService.success(
+        getLocaleString("toast_create_sub_section_success"),
       );
-    }
+      dispatch(addSubSection(res));
+    });
+    await getAllSubSections().then((data) => {
+      setRowLength(data.count);
+      setSubSections(data.rows);
+    });
+    handleCloseModal();
   };
 
-  const handleUpdateSubSection = async (id, data, form) => {
-    try {
-      await updateSubSection(id, {
-        ...data,
-        ...form,
-      }).then((res) => {
-        dispatch(editSubSection(res));
-        ToastService.success(
-          getLocaleString("toast_update_sub_section_success"),
-        );
-      });
-
-      await getAllSubSections().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setSubSections(data.rows);
-      });
-      handleCloseModal();
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
+  const handleUpdateSubSection = async (id, data, sectionId) => {
+    await updateSubSection(id, {
+      ...data,
+    }).then((res) => {
+      dispatch(editSubSection({ ...res, sectionId: sectionId }));
+      ToastService.success(
+        getLocaleString("toast_update_sub_section_success"),
       );
-    }
-  };
+    });
 
-  const handleChangePage = (event, value) => {
-    setPage(value);
+    await getAllSubSections().then((data) => {
+      setRowLength(data.count);
+      setSubSections(data.rows);
+    });
+    handleCloseModal();
   };
 
   const handleGoBack = () => {
@@ -222,7 +208,7 @@ const SubSection = () => {
           aria-expanded={isOpen ? "true" : undefined}
           onClick={(event) => handleClick(event, row)}
         >
-          <MoreVertIcon sx={{ color: "gray" }} />
+          <MoreActionsIcon />
         </Button>
       </ActionMenuButtonWrapper>
     );
@@ -234,22 +220,23 @@ const SubSection = () => {
       headerName: getLocaleString("common_table_number"),
       editable: false,
       filterable: false,
-      flex: 2,
+      flex: 1,
+      minWidth: 100,
     },
     {
       field: "name",
       headerName: getLocaleString("common_table_name"),
       editable: false,
-      flex: 4,
+      flex: 3,
+      minWidth: 250,
       renderCell: ({ row }) => (
         <React.Fragment key={row.no}>
           {row.name}
           {row.archived && (
-            <Chip
+            <ArchivedChip
               label={getLocaleString("common_table_archived")}
-              icon={<WarningAmberIcon sx={{ fontSize: "16px" }} />}
+              icon={<ArchivedIcon />}
               color="warning"
-              sx={{ marginLeft: "0.5rem" }}
             />
           )}
         </React.Fragment>
@@ -261,12 +248,15 @@ const SubSection = () => {
       editable: false,
       type: "boolean",
       flex: 1,
+      minWidth: 150,
     },
     {
-      field: "sectionId",
-      headerName: getLocaleString("common_table_sectionId"),
+      field: "section",
+      headerName: getLocaleString("common_table_section"),
       editable: false,
-      flex: 1,
+      filterable: false,
+      flex: 1.5,
+      minWidth: 150,
     },
     {
       field: "createdAt",
@@ -275,7 +265,8 @@ const SubSection = () => {
       type: "date",
       renderCell: ({ row }) =>
         moment(row.createdAt).utc(false).format("YYYY-MM-DD"),
-      flex: 2,
+      flex: 1,
+      minWidth: 100,
     },
     {
       field: "updatedAt",
@@ -284,22 +275,25 @@ const SubSection = () => {
       type: "date",
       renderCell: ({ row }) =>
         moment(row.updatedAt).utc(false).format("YYYY-MM-DD"),
-      flex: 2,
+      flex: 1,
+      minWidth: 100,
     },
     {
       field: "action",
-      headerName: "",
+      headerName: getLocaleString("common_table_action"),
       editable: false,
       filterable: false,
-      flex: 2,
+      sortable: false,
+      width: 100,
       renderCell,
     },
   ];
 
   const rows = subSections.map((row, index) => ({
     ...row,
-    no: (page - 1) * pageSize + index + 1,
+    no: paginationModel.page * paginationModel.pageSize + index + 1,
     archived: row.archived,
+    section: sectionName,
     createdAt: moment(row.createdAt).toDate(),
     updatedAt: moment(row.updatedAt).toDate(),
   }));
@@ -307,46 +301,41 @@ const SubSection = () => {
   return (
     <ContentWrapper>
       <ContentHeader>
-        <Box>
+        <Box className="mr-2">
           <Typography variant="h5">
             {getLocaleString("subsection_page_title")}
           </Typography>
         </Box>
-        <Box display="flex" alignItems="center">
-          <Button
+        <Box className="sm:flex justify-between gap-1">
+          <MenuItemButton
             variant="outlined"
             startIcon={<AddIcon />}
             onClick={handleOpenModal}
-            sx={{ marginRight: "0.25rem" }}
+            className="w-full sm:w-auto"
           >
             {getLocaleString("common_create")}
-          </Button>
-          <Button
+          </MenuItemButton>
+          <MenuItemButton
             variant="outlined"
             startIcon={<ArrowBackIosIcon />}
             color="secondary"
             onClick={handleGoBack}
+            className="w-full sm:w-auto"
           >
             {getLocaleString("common_go_back")}
-          </Button>
+          </MenuItemButton>
         </Box>
       </ContentHeader>
       <CustomDataGrid
         rows={rows}
         columns={subSectionTableColumns}
         filterMode="server"
+        rowLength={rowLength}
+        onPaginationModelChange={setPaginationModel}
+        paginationModel={paginationModel}
         filterModel={filterModel}
-        onFilterChanged={(filter) => handleChangeSearch(filter)}
+        onFilterChanged={handleDebounceChangeSearch}
       />
-      <Box display="flex" alignItems="center" justifyContent="center" pt={4}>
-        <Pagination
-          color="primary"
-          shape="rounded"
-          count={totalPage}
-          page={page}
-          onChange={handleChangePage}
-        />
-      </Box>
       {isOpen && (
         <Menu
           id="basic-menu"
@@ -358,12 +347,12 @@ const SubSection = () => {
           }}
         >
           <ActionMenuItem onClick={() => handleEditSubSection(activeRow)}>
-            <EditIcon sx={{ marginRight: "1rem", color: "gray" }} />
+            <EditIcon className="menu-icon" />
             {getLocaleString("common_edit")}
           </ActionMenuItem>
           {account.role.name === UserRoles.SUPERADMIN && (
             <ActionMenuItem onClick={() => handleOpenRemoveModal(activeRow)}>
-              <DeleteIcon sx={{ marginRight: "1rem", color: "gray" }} />
+              <DeleteIcon className="menu-icon" />
               {getLocaleString("common_delete")}
             </ActionMenuItem>
           )}

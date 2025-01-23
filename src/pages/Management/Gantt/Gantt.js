@@ -16,6 +16,7 @@ import {
 } from "../../../services";
 import CreatePlanModal from "../../../components/Modal/CreatePlanModal";
 import { useAuthState } from "../../../hooks/redux";
+import { useSelector } from "react-redux";
 
 const sampleData = {
   data: [],
@@ -28,75 +29,61 @@ const Gantt = () => {
   const [chartData, setChartData] = useState(sampleData);
   const [currentPlan, setCurrentPlan] = useState(null);
   const [currentZoom, setCurrentZoom] = useState("Days");
+  const [filterValue, setFilterValue] = useState("All");
   const [currentMessages, setCurrentMessages] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [plans, setPlans] = useState([]);
+  const sections = useSelector((state) => state.sectionReducer.sections);
+
   const getLocaleString = (key) => t(key);
 
   useEffect(() => {
-    getAllPlans().then((res) => {
-      setPlans(res.rows);
-    });
-  }, []);
-
-  const initChartData = async () => {
-    await getAllPlans()
+    getAllPlans()
       .then((res) => {
-        let newChartData = chartData;
-        res.rows.forEach((plan) => {
-          newChartData = {
-            ...newChartData,
-            data: [
-              ...newChartData.data,
-              {
-                id: plan?.id,
-                text: plan?.title,
-                start_date: moment(plan?.startDate)
-                  .format("YYYY-MM-DD")
-                  .toString(),
-                end_date: moment(plan?.endDate).format("YYYY-MM-DD").toString(),
-                stages: plan?.stages,
-                progress: 1,
-              },
-            ],
-          };
-          JSON.parse(plan?.stages).forEach((stage, index) => {
-            if (stage?.enabled) {
-              newChartData = {
-                ...newChartData,
-                data: [
-                  ...newChartData.data,
-                  {
-                    id: `${plan?.id}-${index}`,
-                    text: stage?.stageMode,
-                    parent: plan?.id,
-                    start_date: moment(stage?.start)
-                      .format("YYYY-MM-DD")
-                      .toString(),
-                    end_date: moment(stage?.end)
-                      .format("YYYY-MM-DD")
-                      .toString(),
-                    progress: 1,
-                  },
-                ],
-              };
-            }
-          });
-          setChartData(newChartData);
-        });
+        setPlans(res.rows);
       })
       .catch((err) => {
         console.log("err=>", err);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const initChartData = () => {
+    const newChartData = {
+      data: [],
+      links: [],
+    };
+
+    plans.forEach((plan) => {
+      const sectionName = sections.find(
+        (section) => section.id === plan?.sectionId,
+      )?.name;
+
+      if (filterValue === "All" || filterValue === sectionName) {
+        newChartData.data.push({
+          id: plan?.id,
+          text: plan?.title,
+          start_date: moment(plan?.startDate).format("YYYY-MM-DD"),
+          end_date: moment(plan?.endDate).format("YYYY-MM-DD"),
+          stages: plan?.stages,
+          progress: 1,
+        });
+      }
+    });
+    setChartData(newChartData);
   };
 
   useEffect(() => {
     initChartData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plans]);
+  }, [plans, filterValue]);
 
   const handleZoomChange = (zoom) => {
     setCurrentZoom(zoom);
+  };
+
+  const handleFilterChange = (filter) => {
+    setFilterValue(filter);
   };
 
   const addMessage = (message) => {
@@ -104,43 +91,29 @@ const Gantt = () => {
   };
 
   const handleUpdatePlan = async (id, data, form) => {
-    try {
-      await updatePlan(id, {
-        ...data,
-        ...form,
-      }).then((res) => {
-        ToastService.success(getLocaleString(res.message));
-      });
-      await getAllPlans().then((res) => {
-        setPlans(res.rows);
-      });
-      handleClosePlanModal();
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
+    await updatePlan(id, {
+      ...data,
+      ...form,
+    }).then((res) => {
+      ToastService.success(getLocaleString(res.message));
+    });
+    await getAllPlans().then((res) => {
+      setPlans(res.rows);
+    });
+    handleClosePlanModal();
   };
 
   const handleCreatePlan = async (data) => {
-    try {
-      await createPlan({
-        ...data,
-        owner: account?.account.id,
-      }).then((res) => {
-        ToastService.success(getLocaleString(res.message));
-      });
-      await getAllPlans().then((res) => {
-        setPlans(res.rows);
-      });
-      handleClosePlanModal();
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
+    await createPlan({
+      ...data,
+      owner: account?.account.id,
+    }).then((res) => {
+      ToastService.success(getLocaleString(res.message));
+    });
+    await getAllPlans().then((res) => {
+      setPlans(res.rows);
+    });
+    handleClosePlanModal();
   };
 
   const logDataUpdate = (type, action, item, id) => {
@@ -183,10 +156,6 @@ const Gantt = () => {
     await getPlan(taskId)
       .then((res) => {
         setCurrentPlan(res);
-      })
-      .catch((err) => {
-        console.log("err=>", err);
-        ToastService.error(getLocaleString("common_network_error"));
       });
   };
 
@@ -198,7 +167,11 @@ const Gantt = () => {
   return (
     <Box>
       <div className="zoom-bar">
-        <Toolbar zoom={currentZoom} onZoomChange={handleZoomChange} />
+        <Toolbar
+          zoom={currentZoom}
+          onZoomChange={handleZoomChange}
+          onFilterChange={handleFilterChange}
+        />
       </div>
 
       <div className="gantt-container">

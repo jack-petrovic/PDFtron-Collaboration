@@ -75,7 +75,7 @@ export class ToastService {
         <Box>
           <Typography sx={{ fontWeight: "bold" }}>Bad Request!</Typography>
           {Object.entries(data).map(([key, value]) => (
-            <Stack direction="row" alignItems="center">
+            <Stack direction="row" alignItems="center" key={key}>
               {key !== "non_field_errors" && (
                 <Typography
                   sx={{
@@ -90,8 +90,10 @@ export class ToastService {
               <Box>
                 {Array.isArray(value) ? (
                   <React.Fragment>
-                    {value.map((msg) => (
-                      <Typography variant="body1">{msg}</Typography>
+                    {value.map((msg, index) => (
+                      <Typography variant="body1" key={index}>
+                        {msg}
+                      </Typography>
                     ))}
                   </React.Fragment>
                 ) : (

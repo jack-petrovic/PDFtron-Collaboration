@@ -83,6 +83,7 @@ const Preview = ({
       loading={isLoading}
       disabled={!textValue}
       onClick={togglePreviewModal}
+      sx={{ mb: 1, mx: 0.5 }}
     >
       {getLocaleString("text_composer_spell_check")}
     </LoadingButton>

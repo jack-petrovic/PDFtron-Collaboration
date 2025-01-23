@@ -70,6 +70,7 @@ const SummaryModal = ({
         loading={isLoading}
         disabled={!textValue}
         onClick={onClickSummary}
+        sx={{ mb: 1, mr: 0.5 }}
       >
         {getLocaleString("text_composer_summary")}
       </LoadingButton>

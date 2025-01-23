@@ -4,6 +4,7 @@ import { Draggable, Droppable, DragDropContext } from "react-beautiful-dnd";
 import CloseIcon from "@mui/icons-material/Close";
 import { Box, Modal, Paper, Typography, Button } from "@mui/material";
 import { CloseButtonBox, FormContainer } from "../style";
+import { StageMode } from "../../../constants";
 
 const ArrangeOrderModal = ({ open, close, onChange, data }) => {
   const { t } = useTranslation();
@@ -51,6 +52,9 @@ const ArrangeOrderModal = ({ open, close, onChange, data }) => {
             <Typography variant="h5" textAlign="center" mb={2} color="primary">
               {getLocaleString("common_table_arrange_order")}
             </Typography>
+            <Typography className="text-center text-lg my-1">
+              {getLocaleString("toast_order_rearrange_description")}
+            </Typography>
             <Droppable droppableId="droppable">
               {(droppableProvided) => (
                 <Box
@@ -62,7 +66,9 @@ const ArrangeOrderModal = ({ open, close, onChange, data }) => {
                       key={item.id}
                       draggableId={item.id}
                       index={index}
-                      isDragDisabled={item.stageMode === "Prescription Mode"}
+                      isDragDisabled={
+                        item.stageMode === StageMode.PRESCRIPTIONMODE
+                      }
                     >
                       {(draggableProvided) => (
                         <Paper
@@ -70,6 +76,10 @@ const ArrangeOrderModal = ({ open, close, onChange, data }) => {
                             padding: "0.5rem",
                             marginTop: "0.5rem",
                             cursor: "pointer",
+                            backgroundColor:
+                              item.stageMode === StageMode.PRESCRIPTIONMODE
+                                ? "#d1d5db"
+                                : "white",
                           }}
                           ref={draggableProvided.innerRef}
                           {...draggableProvided.draggableProps}

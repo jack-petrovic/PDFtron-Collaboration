@@ -60,19 +60,21 @@ const TextComposer = ({
     setTextValue(
       quillRef.current?.getEditor().getText().replaceAll("/n", "").trim(),
     );
-    detectLanguage(
-      quillRef.current.getEditor().getText().replaceAll("\n", " "),
-    ).then((res) => {
-      const detectedLang = res.data?.lang_code || "en";
-      if (!languages.includes(detectedLang)) {
-        setLanguages([...languages, detectedLang]);
-      }
-      setLang(detectedLang);
-    });
+    detectLanguage(quillRef.current.getEditor().getText().replaceAll("\n", " "))
+      .then((res) => {
+        const detectedLang = res.data?.lang_code || "en";
+        if (!languages.includes(detectedLang)) {
+          setLanguages([...languages, detectedLang]);
+        }
+        setLang(detectedLang);
+      })
+      .catch((err) => {
+        console.log("err=>", err);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedText]);
 
-  function handleChange() {
+  const handleChange = () => {
     setSuggestions([]);
     setPredictions([]);
     const editor = quillRef.current.getEditor();
@@ -90,9 +92,13 @@ const TextComposer = ({
           currentWord?.length > 1 &&
           /^[a-zA-Z]$/.test(currentWord[currentWord.length - 1])
         ) {
-          getWordSuggestion(currentWord).then((res) => {
-            setSuggestions(res.data.suggestion_list);
-          });
+          getWordSuggestion(currentWord)
+            .then((res) => {
+              setSuggestions(res.data.suggestion_list);
+            })
+            .catch((err) => {
+              console.log("err=>", err);
+            });
         } else {
           setSuggestions([]);
         }
@@ -110,14 +116,14 @@ const TextComposer = ({
       }
     }
     canSuggestRef.current = true;
-  }
+  };
 
   useEffect(() => {
     handleChange();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text]);
 
-  function handleSuggestionSelect(suggestion) {
+  const handleSuggestionSelect = (suggestion) => {
     const range = quillRef.current.editor.selection.savedRange;
     let currentWord = "";
     if (range) {
@@ -150,14 +156,14 @@ const TextComposer = ({
       .insertText(range?.index - currentWord.length, suggestion);
     quillRef.current.focus();
     setSuggestions([]);
-  }
+  };
 
-  function handlePredictionSelect(prediction) {
+  const handlePredictionSelect = (prediction) => {
     canSuggestRef.current = false;
     quillRef.current.getEditor().setText(prediction);
     quillRef.current.focus();
     setPredictions([]);
-  }
+  };
 
   const handleClickOutSideOfMenu = useCallback(
     (e) => {
@@ -246,9 +252,13 @@ const TextComposer = ({
   };
 
   useEffect(() => {
-    getProhibitedWords().then((res) => {
-      setProhibitedWords(res.rows);
-    });
+    getProhibitedWords()
+      .then((res) => {
+        setProhibitedWords(res.rows);
+      })
+      .catch((err) => {
+        console.log("err=>", err);
+      });
   }, []);
 
   useEffect(() => {
@@ -301,7 +311,7 @@ const TextComposer = ({
             <span className="font-bold">Language:</span> {displayNames.of(lang)}
           </p>
         </Box>
-        <Box className="flex gap-2">
+        <Box className="sm:flex gap-2">
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography>{getLocaleString("text_composer_predict")}</Typography>
             <AntSwitch
@@ -318,49 +328,52 @@ const TextComposer = ({
               inputProps={{ "aria-label": "ant design" }}
             />
           </Stack>
-          <SummaryModal
-            setConfirmDialogData={setConfirmDialogData}
-            quillRef={quillRef}
-            isLoading={isLoadingSummary}
-            setIsLoading={setIsLoadingSummary}
-            lang={lang}
-            textValue={textValue}
-          />
-          {spellCheck && (
-            <Preview
-              setConfirmDialogData={setConfirmDialogData}
-              quillRef={quillRef}
-              isLoading={isLoadingPreview}
-              setIsLoading={setIsLoadingPreview}
-              lang={lang}
-              textValue={textValue}
-            />
-          )}
-          <LoadingButton
-            size="small"
-            variant="contained"
-            loading={isLoadingProhibitedWords}
-            disabled={!textValue}
-            onClick={onClickCheckProhibitedWords}
-          >
-            {getLocaleString("text_composer_prohibited_word")}
-          </LoadingButton>
-          <GrammarCheckModal
-            setConfirmDialogData={setConfirmDialogData}
-            quillRef={quillRef}
-            isLoading={isLoadingGrammarCheck}
-            setIsLoading={setIsLoadingGrammarCheck}
-            lang={lang}
-            textValue={textValue}
-          />
-          <SentimentModal
-            setConfirmDialogData={setConfirmDialogData}
-            quillRef={quillRef}
-            isLoading={isLoadingSentiment}
-            setIsLoading={setIsLoadingSentiment}
-            textValue={textValue}
-          />
         </Box>
+      </Box>
+      <Box className="md:flex md:justify-start gap-2 pb-3">
+        <SummaryModal
+          setConfirmDialogData={setConfirmDialogData}
+          quillRef={quillRef}
+          isLoading={isLoadingSummary}
+          setIsLoading={setIsLoadingSummary}
+          lang={lang}
+          textValue={textValue}
+        />
+        {spellCheck && (
+          <Preview
+            setConfirmDialogData={setConfirmDialogData}
+            quillRef={quillRef}
+            isLoading={isLoadingPreview}
+            setIsLoading={setIsLoadingPreview}
+            lang={lang}
+            textValue={textValue}
+          />
+        )}
+        <LoadingButton
+          size="small"
+          variant="contained"
+          loading={isLoadingProhibitedWords}
+          disabled={!textValue}
+          onClick={onClickCheckProhibitedWords}
+          sx={{ mb: 1, mx: 0.5 }}
+        >
+          {getLocaleString("text_composer_prohibited_word")}
+        </LoadingButton>
+        <GrammarCheckModal
+          setConfirmDialogData={setConfirmDialogData}
+          quillRef={quillRef}
+          isLoading={isLoadingGrammarCheck}
+          setIsLoading={setIsLoadingGrammarCheck}
+          lang={lang}
+          textValue={textValue}
+        />
+        <SentimentModal
+          setConfirmDialogData={setConfirmDialogData}
+          quillRef={quillRef}
+          isLoading={isLoadingSentiment}
+          setIsLoading={setIsLoadingSentiment}
+          textValue={textValue}
+        />
       </Box>
 
       <div

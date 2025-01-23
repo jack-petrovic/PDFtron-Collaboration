@@ -97,6 +97,7 @@ const GrammarCheckModal = ({
         loading={isLoading}
         disabled={!textValue}
         onClick={onClickCheckGrammar}
+        sx={{ mb: 1, mx: 0.5 }}
       >
         {getLocaleString("text_composer_grammar_check")}
       </LoadingButton>

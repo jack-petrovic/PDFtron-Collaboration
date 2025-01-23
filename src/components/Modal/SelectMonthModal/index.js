@@ -7,31 +7,26 @@ import { useTranslation } from "react-i18next";
 const SelectMonthModal = ({ open, close, select }) => {
   const { t } = useTranslation();
   const getLocaleString = (key) => t(key);
-  const handleMonth = (date) => {
+  const handleMonthSelect = (date) => {
     date ? select(date) : alert(getLocaleString("modal_select_month_alert"));
-  };
-  const handleClose = () => {
-    close();
   };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Dialog open={open} onClose={handleClose}>
+      <Dialog open={open} onClose={close}>
         <Box
           display="flex"
           alignItems="center"
           justifyContent="center"
           height="100%"
+          padding={2}
         >
           <StaticDatePicker
             orientation="landscape"
-            localeText={{ toolbarTitle: "Date Picker" }}
             views={["month", "year"]}
-            slots={{
-              textField: (params) => <TextField {...params} />,
-            }}
-            onAccept={(date) => handleMonth(date)}
-            onClose={handleClose}
+            onAccept={handleMonthSelect}
+            onClose={close}
+            renderInput={(params) => <TextField {...params} />}
           />
         </Box>
       </Dialog>

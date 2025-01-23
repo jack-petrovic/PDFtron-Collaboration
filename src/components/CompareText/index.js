@@ -1,28 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import Diff from "text-diff";
 import { Box, FormControlLabel, RadioGroup, Radio } from "@mui/material";
 
 const CompareText = ({ text1, text2 }) => {
   const { t } = useTranslation();
-  const [diffOutput, setDiffOutput] = useState("");
-  const [diffOutput1, setDiffOutput1] = useState("");
-  const [diffOutput2, setDiffOutput2] = useState("");
   const [view, setView] = useState("unified");
   const getLocaleString = (key) => t(key);
   const handleChangeView = (e) => {
     setView(e.target.value);
   };
 
-  useEffect(() => {
+  const { diffOutput, diffOutput1, diffOutput2 } = useMemo(() => {
     const diff = new Diff();
     diff.Timeout = 1;
     const textDiff1 = diff.main(text1, text2, 0);
     const textDiff2 = diff.main(text2, text1, 0);
 
-    setDiffOutput1(diff.prettyHtml(textDiff1));
-    setDiffOutput2(diff.prettyHtml(textDiff2));
-    setDiffOutput(diff.prettyHtml(textDiff1));
+    return {
+      diffOutput: diff.prettyHtml(textDiff1),
+      diffOutput1: diff.prettyHtml(textDiff1),
+      diffOutput2: diff.prettyHtml(textDiff2),
+    };
   }, [text1, text2]);
 
   return (

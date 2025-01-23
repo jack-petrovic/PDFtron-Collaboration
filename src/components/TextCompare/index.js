@@ -14,8 +14,9 @@ import {
   TextCompareItem,
   TextCompareWrapper,
 } from "./style";
+import { SpinnerContainer } from "../SpinnerContainer";
 
-function TextCompare({ file1, file2 }) {
+const TextCompare = ({ file1, file2 }) => {
   const { t } = useTranslation();
   const { language } = i18next;
   const dispatch = useDispatch();
@@ -29,6 +30,7 @@ function TextCompare({ file1, file2 }) {
   const [loadDocument1, setLoadDocument1] = useState(false);
   const [loadDocument2, setLoadDocument2] = useState(false);
   const [openCompareModal, setOpenCompareModal] = useState(false);
+
   const getLocaleString = (key) => t(key);
   const loadXfdfStrings = (documentId) => {
     return getAnnotationsByDocument(documentId);
@@ -41,7 +43,6 @@ function TextCompare({ file1, file2 }) {
 
   useEffect(() => {
     if (totalPage1 && totalPage2) {
-      console.log("Total Pages:", totalPage1, totalPage2); // Log total pages
       if (Math.abs(totalPage1 - totalPage2) < 10) {
         setCanCompare(true);
       } else {
@@ -52,9 +53,17 @@ function TextCompare({ file1, file2 }) {
 
   useEffect(() => {
     const modalDataId = `myCustomModal-${Date.now()}`;
-    if (canCompare && documentViewer1 && documentViewer2 && loadDocument1 && loadDocument2 && language) {
+    if (
+      canCompare &&
+      documentViewer1 &&
+      documentViewer2 &&
+      loadDocument1 &&
+      loadDocument2 &&
+      language
+    ) {
       const iframe = document.querySelector('iframe[id*="webviewer-"]');
-      const innerDoc = iframe?.contentDocument || iframe?.contentWindow.document;
+      const innerDoc =
+        iframe?.contentDocument || iframe?.contentWindow.document;
       let resultBtn = innerDoc?.getElementById("result-btn");
 
       let resultElement = document.createElement("div");
@@ -89,7 +98,7 @@ function TextCompare({ file1, file2 }) {
           resultBtn.innerHTML = getLocaleString("compare_result_button");
           resultBtn.style.color = "#FFF";
           resultBtn.style.border = "none";
-          resultBtn.style.backgroundColor = "#589ad1";
+          resultBtn.style.backgroundColor = "#1976d2";
           resultBtn.style.borderRadius = "6px";
           resultBtn.style.padding = "8px 12px";
           resultBtn.style.cursor = "pointer";
@@ -107,20 +116,31 @@ function TextCompare({ file1, file2 }) {
           header.push(newCustomElement);
         });
       }
+
       const startCompare = async () => {
         if (loadDocument1 && loadDocument2) {
-          console.log("Starting comparison..."); // Log when comparison starts
-          const beforeColor = new instance.Core.Annotations.Color(21, 205, 131, 0.4);
-          const afterColor = new instance.Core.Annotations.Color(255, 73, 73, 0.4);
+          const beforeColor = new instance.Core.Annotations.Color(
+            21,
+            205,
+            131,
+            0.4,
+          );
+          const afterColor = new instance.Core.Annotations.Color(
+            255,
+            73,
+            73,
+            0.4,
+          );
           const options = { beforeColor, afterColor };
-          const { doc1Annotations, diffCount } = await documentViewer1.startSemanticDiff(documentViewer2, options);
+          const { doc1Annotations, diffCount } =
+            await documentViewer1.startSemanticDiff(documentViewer2, options);
 
-          let i = 0;
           let insertedNumber = 0;
           let deletedNumber = 0;
           let editedNumber = 0;
-          for (i = 0; i < doc1Annotations.length; i++) {
-            switch (doc1Annotations[i].aj.TextDiffType) {
+
+          doc1Annotations.forEach((annotation) => {
+            switch (annotation.aj.TextDiffType) {
               case "insert":
                 insertedNumber++;
                 break;
@@ -133,18 +153,21 @@ function TextCompare({ file1, file2 }) {
               default:
                 break;
             }
-          }
+          });
+
           const metaData = {
             total: doc1Annotations.length,
             inserted: insertedNumber,
             edited: editedNumber,
             deleted: deletedNumber,
           };
-          createComparison({
+
+          await createComparison({
             planId: file2?.planId,
             stage: file2?.stage,
             metaData: JSON.stringify(metaData),
-          }).then();
+          });
+
           const modalContent = ReactDOM.createRoot(resultElement);
           modalContent.render(
             <TextDiffDialog
@@ -156,14 +179,19 @@ function TextCompare({ file1, file2 }) {
               stage={file2?.stage}
             />,
           );
+        } else {
+          console.log("Documents not loaded yet.");
         }
       };
       startCompare();
     }
     return () => {
       const iframe = document.querySelector('iframe[id*="webviewer-"]');
-      const innerDoc = iframe?.contentDocument || iframe?.contentWindow.document;
-      const originalModal = innerDoc?.querySelector(`[data-element="${modalDataId}"]`);
+      const innerDoc =
+        iframe?.contentDocument || iframe?.contentWindow.document;
+      const originalModal = innerDoc?.querySelector(
+        `[data-element="${modalDataId}"]`,
+      );
       if (originalModal) {
         originalModal.remove();
       }
@@ -185,16 +213,19 @@ function TextCompare({ file1, file2 }) {
   }, [instance, language]);
 
   useEffect(() => {
-    WebViewer(
+    WebViewer.Iframe(
       {
         path: "/webviewer/lib",
         fullAPI: true,
+        ui: "legacy",
+        licenseKey:
+          "demo:1733762057552:7ed577b4030000000021c2547b221caaa8034b12df9500f1a11ef76a43",
       },
       viewerCompare.current,
     ).then((instance) => {
       setInstance(instance);
       const { UI, Core } = instance;
-      UI.enableFeatures([UI.Feature.MultiViewerMode]);
+      UI.enterMultiViewerMode();
       const { PDFNet } = Core;
 
       UI.addEventListener(UI.Events.MULTI_VIEWER_READY, async () => {
@@ -213,8 +244,13 @@ function TextCompare({ file1, file2 }) {
             getDocument(file1.urlFile),
             getDocument(file2.urlFile),
           ]);
-          doc1.getPageCount().then((res) => setTotalPage1(res));
-          doc2.getPageCount().then((res) => setTotalPage2(res));
+
+          const [count1, count2] = await Promise.all([
+            doc1.getPageCount(),
+            doc2.getPageCount(),
+          ]);
+          setTotalPage1(count1);
+          setTotalPage2(count2);
 
           const getPageArray = async (doc) => {
             const arr = [];
@@ -262,12 +298,10 @@ function TextCompare({ file1, file2 }) {
         }
 
         documentViewer1.addEventListener("documentLoaded", () => {
-          console.log("Document 1 loaded"); // Log when document 1 is loaded
           dispatch(finishLoading());
           setLoadDocument1(true);
         });
         documentViewer2.addEventListener("documentLoaded", () => {
-          console.log("Document 2 loaded"); // Log when document 2 is loaded
           dispatch(finishLoading());
           setLoadDocument2(true);
         });
@@ -315,13 +349,14 @@ function TextCompare({ file1, file2 }) {
         </TextCompareContainer>
       )}
       <ConfirmModal
-        content={getLocaleString("compare_confirm_message")}
+        content="compare_confirm_message"
         open={openCompareModal}
         close={handleCloseCompareModal}
         handleClick={handleClick}
         handleClickCancel={handleClickCancel}
       />
+      <SpinnerContainer />
     </TextCompareWrapper>
   );
-}
+};
 export default TextCompare;

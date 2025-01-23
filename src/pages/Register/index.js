@@ -5,28 +5,31 @@ import { useAuthState } from "../../hooks/redux";
 import {
   Box,
   FormControl,
-  FormHelperText,
   Grid,
   InputLabel,
   MenuItem,
   Stack,
-  TextField,
   Typography,
 } from "@mui/material";
 import Select from "@mui/material/Select";
-import Button from "@mui/material/Button";
 import * as Yup from "yup";
 import { useFormik } from "formik";
 import { AuthService, ToastService } from "../../services";
-import { ErrorText, FormWrapper, FromContainer, SuccessText } from "./style";
+import { ErrorText, FormWrapper, FormContainer, SuccessText } from "./style";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import moment from "moment";
 import dayjs from "dayjs";
+import { FormErrorText, FormTextField } from "../style";
+import { SubmitButton } from "../../components/Modal/style";
 
 const validationSchema = Yup.object().shape({
   name: Yup.string().required("register_name_required"),
   email: Yup.string()
+    .matches(
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      'Invalid email format'
+    )
     .email("register_email_invalid")
     .required("register_email_required"),
   userId: Yup.string()
@@ -43,14 +46,15 @@ const validationSchema = Yup.object().shape({
   gender: Yup.bool().required("register_gender_required"),
   password: Yup.string()
     .required("register_password_required")
-    .min(8, "Password must be at least 8 characters")
-    .max(128, "Password must be no longer than 128 characters"),
+    .min(8, "register_password_min_length")
+    .max(128, "register_password_max_length")
+    .matches(/^[a-zA-Z0-9]+$/, "register_password_allowed_combination"),
   confirmPassword: Yup.string()
     .oneOf([Yup.ref("password"), null], "register_confirm_password_match")
     .required("register_confirm_password_required"),
 });
 
-function Register() {
+const Register = () => {
   const { error } = useAuthState();
   const [registered, setRegistered] = useState(false);
   const [gender, setGender] = useState(true);
@@ -63,16 +67,13 @@ function Register() {
       const { confirmPassword, ...data } = values;
       await AuthService.register(data).then((res) => {
         setRegistered(true);
-        ToastService.success(getLocaleString(res.message));
+        ToastService.success(getLocaleString("toast_register_user_success"));
         navigate("/login");
       });
       form.resetForm();
     } catch (err) {
       console.log("err=>", err);
       setRegistered(false);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
     }
   };
 
@@ -97,7 +98,7 @@ function Register() {
 
   return (
     <FormWrapper>
-      <FromContainer>
+      <FormContainer>
         <form onSubmit={form.handleSubmit}>
           <Box sx={{ marginBottom: "1rem" }}>
             <Typography variant="h5">
@@ -111,7 +112,7 @@ function Register() {
             )}
           </Box>
 
-          <TextField
+          <FormTextField
             fullWidth
             label={getLocaleString("register_name_label")}
             placeholder={getLocaleString("register_name_placeholder")}
@@ -120,10 +121,9 @@ function Register() {
               form.errors.name && form.touched.name ? form.errors.name : "",
             )}
             error={Boolean(form.errors.name && form.touched.name)}
-            sx={{ mb: 3 }}
           />
 
-          <TextField
+          <FormTextField
             fullWidth
             label={getLocaleString("register_email_label")}
             placeholder={getLocaleString("register_email_placeholder")}
@@ -132,10 +132,9 @@ function Register() {
               form.errors.email && form.touched.email ? form.errors.email : "",
             )}
             error={Boolean(form.errors.email && form.touched.email)}
-            sx={{ mb: 3 }}
           />
 
-          <TextField
+          <FormTextField
             fullWidth
             label={getLocaleString("register_userId_label")}
             placeholder={getLocaleString("register_userId_placeholder")}
@@ -146,7 +145,6 @@ function Register() {
                 : "",
             )}
             error={Boolean(form.errors.userId && form.touched.userId)}
-            sx={{ mb: 3 }}
           />
 
           <Grid container columns={2}>
@@ -190,13 +188,13 @@ function Register() {
                   />
                 </LocalizationProvider>
                 {Boolean(form.errors.birthday && form.touched.birthday) && (
-                  <FormHelperText sx={{ color: "red" }}>
+                  <FormErrorText>
                     {getLocaleString(
                       form.errors.birthday && form.touched.birthday
                         ? form.errors.birthday
                         : "",
                     )}
-                  </FormHelperText>
+                  </FormErrorText>
                 )}
               </FormControl>
             </Grid>
@@ -221,15 +219,15 @@ function Register() {
                   </MenuItem>
                 </Select>
                 {Boolean(form.errors.gender && form.touched.gender) && (
-                  <FormHelperText sx={{ color: "red" }}>
+                  <FormErrorText>
                     {getLocaleString("register_gender_required")}
-                  </FormHelperText>
+                  </FormErrorText>
                 )}
               </FormControl>
             </Grid>
           </Grid>
 
-          <TextField
+          <FormTextField
             fullWidth
             type="password"
             label={getLocaleString("register_password_label")}
@@ -241,10 +239,9 @@ function Register() {
                 : "",
             )}
             error={Boolean(form.errors.password && form.touched.password)}
-            sx={{ mb: 3 }}
           />
 
-          <TextField
+          <FormTextField
             fullWidth
             type="password"
             label={getLocaleString("register_confirm_password_label")}
@@ -260,7 +257,6 @@ function Register() {
             error={Boolean(
               form.errors.confirmPassword && form.touched.confirmPassword,
             )}
-            sx={{ mb: 3 }}
           />
 
           <Stack
@@ -269,14 +265,9 @@ function Register() {
             alignItems="center"
             spacing={2}
           >
-            <Button
-              variant="contained"
-              type="submit"
-              fullWidth
-              sx={{ textTransform: "capitalize" }}
-            >
+            <SubmitButton variant="contained" type="submit" fullWidth>
               {getLocaleString("register_button_text")}
-            </Button>
+            </SubmitButton>
           </Stack>
           <Stack
             direction="row"
@@ -289,9 +280,9 @@ function Register() {
             </Link>
           </Stack>
         </form>
-      </FromContainer>
+      </FormContainer>
     </FormWrapper>
   );
-}
+};
 
 export default Register;

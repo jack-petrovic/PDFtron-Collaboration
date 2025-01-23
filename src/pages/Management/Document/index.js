@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Box, Button, Menu, Pagination, Typography } from "@mui/material";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { Box, Button, Menu, Typography } from "@mui/material";
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -17,31 +16,38 @@ import {
   deleteDocument,
   getDocuments,
   ToastService,
+  updateDocument,
 } from "../../../services";
 import {
   ActionMenuButtonWrapper,
   ActionMenuItem,
   ContentHeader,
   ContentWrapper,
+  MenuItemButton,
+  MoreActionsIcon,
 } from "../../style";
+import debounce from "lodash/debounce";
 
 const Document = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [liveDocuments, setLiveDocuments] = useState({ rows: [], count: 0 });
-  const [page, setPage] = useState(1);
   const [openModal, setOpenModal] = useState(false);
   const [activeDocument, setActiveDocument] = useState(null);
   const [activeRow, setActiveRow] = useState(null);
-  const pageSize = 10;
-  const [totalPage, setTotalPage] = useState(0);
+  const [rowLength, setRowLength] = useState(0);
   const [anchorEl, setAnchorEl] = useState(null);
   const isOpen = Boolean(anchorEl);
   const [filterModel, setFilterModel] = useState({ items: [] });
   const [removeItem, setRemoveItem] = useState(undefined);
   const [openRemoveModal, setOpenRemoveModal] = useState(false);
   const getLocaleString = (key) => t(key);
+
+  const [paginationModel, setPaginationModel] = useState({
+    pageSize: 10,
+    page: 0,
+  });
 
   const handleClick = (event, row) => {
     setActiveRow(row);
@@ -64,18 +70,21 @@ const Document = () => {
     setFilterModel(filter);
   };
 
+  const handleDebounceChangeSearch = debounce(handleChangedSearch, 500);
+
   const getAllLiveDocuments = useCallback(() => {
-    let query = {};
-    query.pageSize = pageSize;
-    query.page = page;
-    query.filters = filterModel.items.map((item) => ({
-      field: item.field,
-      operator: item.operator,
-      value: item.value,
-    }));
-    query.filtersOperator = filterModel.logicOperator;
+    let query = {
+      pageSize: paginationModel.pageSize,
+      page: paginationModel.page,
+      filters: filterModel.items.map((item) => ({
+        field: item.field,
+        operator: item.operator,
+        value: item.value,
+      })),
+      filtersOperator: filterModel.logicOperator,
+    };
     return getDocuments(query);
-  }, [filterModel, pageSize, page]);
+  }, [filterModel, paginationModel]);
 
   useEffect(() => {
     if (
@@ -92,17 +101,11 @@ const Document = () => {
     }
     getAllLiveDocuments()
       .then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
+        setRowLength(data.count);
         setLiveDocuments(data);
-      })
-      .catch((err) => {
-        ToastService.showHttpError(
-          err,
-          getLocaleString("toast_load_documents_failed"),
-        );
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getAllLiveDocuments, filterModel]);
+  }, [getAllLiveDocuments, filterModel, paginationModel]);
 
   const handleEditDocument = async (item) => {
     setOpenModal(true);
@@ -121,20 +124,13 @@ const Document = () => {
   };
 
   const handleRemoveDocument = async () => {
-    try {
-      await deleteDocument(removeItem.documentId).then((res) => {
-        ToastService.success(getLocaleString(res.message));
-      });
-      await getAllLiveDocuments().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setLiveDocuments(data);
-      });
-    } catch (err) {
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
-
+    await deleteDocument(removeItem.documentId).then((res) => {
+      ToastService.success(getLocaleString(res.message));
+    });
+    await getAllLiveDocuments().then((data) => {
+      setRowLength(data.count);
+      setLiveDocuments(data);
+    });
     handleClose();
     setOpenRemoveModal(false);
   };
@@ -145,26 +141,32 @@ const Document = () => {
   };
 
   const handleCreateDocument = async (data, file) => {
-    try {
-      await createDocument({
-        ...data,
-        file,
-      }).then((res) => {
-        ToastService.success(
-          getLocaleString("toast_create_live_document_success"),
-        );
-      });
-      await getAllLiveDocuments().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setLiveDocuments(data);
-      });
-      handleCloseModal();
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
+    await createDocument({
+      ...data,
+      file,
+    }).then(() => {
+      ToastService.success(
+        getLocaleString("toast_create_live_document_success"),
       );
-    }
+    });
+    await getAllLiveDocuments().then((data) => {
+      setRowLength(data.count);
+      setLiveDocuments(data);
+    });
+    handleCloseModal();
+  };
+
+  const handleUpdateDocument = async (id, data) => {
+    await updateDocument(id, data).then(() => {
+      ToastService.success(
+        getLocaleString("toast_update_live_document_success"),
+      );
+    });
+    await getAllLiveDocuments().then((data) => {
+      setRowLength(data.count);
+      setLiveDocuments(data);
+    });
+    handleCloseModal();
   };
 
   const handleStatus = (value) => {
@@ -190,7 +192,7 @@ const Document = () => {
           aria-expanded={isOpen ? "true" : undefined}
           onClick={(event) => handleClick(event, row)}
         >
-          <MoreVertIcon sx={{ color: "gray" }} />
+          <MoreActionsIcon />
         </Button>
       </ActionMenuButtonWrapper>
     );
@@ -202,39 +204,43 @@ const Document = () => {
       headerName: getLocaleString("common_table_number"),
       editable: false,
       filterable: false,
-      flex: 1,
+      width: 100,
     },
     {
       field: "fileName",
       headerName: getLocaleString("common_table_file_name"),
       editable: false,
-      flex: 2,
+      flex: 3,
+      minWidth: 250,
     },
     {
       field: "stage",
       headerName: getLocaleString("common_table_stage"),
       editable: false,
       flex: 1,
+      minWidth: 100,
     },
     {
       field: "owner",
       headerName: getLocaleString("common_table_owner"),
       editable: false,
       flex: 2,
+      minWidth: 200,
     },
     {
       field: "plan",
       headerName: getLocaleString("common_table_plan"),
       editable: false,
       flex: 2,
+      minWidth: 200,
     },
     {
       field: "approvalStatus",
       headerName: getLocaleString("common_table_status"),
       editable: false,
-      type: "boolean",
       filterable: false,
-      flex: 2,
+      flex: 1,
+      minWidth: 100,
     },
     {
       field: "pagesCount",
@@ -242,19 +248,22 @@ const Document = () => {
       editable: false,
       filterable: false,
       flex: 1,
+      minWidth: 100,
     },
     {
       field: "paperSize",
       headerName: getLocaleString("common_table_paper_size"),
       editable: false,
       flex: 1,
+      minWidth: 100,
     },
     {
       field: "createdAt",
       headerName: getLocaleString("common_table_created_at"),
       editable: false,
       type: "date",
-      flex: 2,
+      flex: 1.5,
+      minWidth: 150,
       renderCell: ({ row }) =>
         moment(row.createdAt).utc(false).format("YYYY-MM-DD"),
     },
@@ -263,23 +272,25 @@ const Document = () => {
       headerName: getLocaleString("common_table_updated_at"),
       editable: false,
       type: "date",
-      flex: 2,
+      flex: 1.5,
+      minWidth: 150,
       renderCell: ({ row }) =>
         moment(row.updatedAt).utc(false).format("YYYY-MM-DD"),
     },
     {
       field: "action",
-      headerName: "",
+      headerName: getLocaleString("common_table_action"),
       editable: false,
       filterable: false,
-      flex: 1,
+      sortable: false,
+      width: 100,
       renderCell,
     },
   ];
 
   const rows = liveDocuments.rows.map((row, index) => ({
     ...row,
-    no: (page - 1) * pageSize + index + 1,
+    no: paginationModel.page * paginationModel.pageSize + index + 1,
     id: row.documentId,
     plan: row.plan?.title,
     approvalStatus: handleStatus(row?.approvalStatus),
@@ -287,10 +298,6 @@ const Document = () => {
     createdAt: moment(row?.createdAt).toDate(),
     updatedAt: moment(row?.updatedAt).toDate(),
   }));
-
-  const handleChangePage = (event, value) => {
-    setPage(value);
-  };
 
   const handleGoBack = () => {
     const pathArr = location.pathname.split("/");
@@ -300,7 +307,7 @@ const Document = () => {
   return (
     <ContentWrapper>
       <ContentHeader>
-        <Box>
+        <Box className="mr-2">
           <Typography variant="h5">
             {getLocaleString("document_page_title")}
           </Typography>
@@ -308,41 +315,36 @@ const Document = () => {
             {getLocaleString("document_page_description")}
           </Typography>
         </Box>
-        <Box>
-          <Button
+        <Box className="sm:flex justify-between gap-2">
+          <MenuItemButton
             variant="outlined"
             startIcon={<AddIcon />}
             onClick={handleOpenModal}
+            className="w-full sm:w-auto"
           >
             {getLocaleString("common_create")}
-          </Button>
-          <Button
+          </MenuItemButton>
+          <MenuItemButton
             variant="outlined"
             startIcon={<ArrowBackIosIcon />}
             color="secondary"
             onClick={handleGoBack}
-            sx={{ marginLeft: "0.25rem" }}
+            className="w-full sm:w-auto"
           >
             {getLocaleString("common_go_back")}
-          </Button>
+          </MenuItemButton>
         </Box>
       </ContentHeader>
       <CustomDataGrid
         rows={rows}
         columns={documentTableColumns}
         filterMode="server"
+        rowLength={rowLength}
+        onPaginationModelChange={setPaginationModel}
+        paginationModel={paginationModel}
         filterModel={filterModel}
-        onFilterChanged={(filter) => handleChangedSearch(filter)}
+        onFilterChanged={handleDebounceChangeSearch}
       />
-      <Box display="flex" alignItems="center" justifyContent="center" pt={4}>
-        <Pagination
-          color="primary"
-          shape="rounded"
-          count={totalPage}
-          page={page}
-          onChange={handleChangePage}
-        />
-      </Box>
       {isOpen && (
         <Menu
           id="basic-menu"
@@ -354,15 +356,15 @@ const Document = () => {
           }}
         >
           <ActionMenuItem onClick={() => joinLiveCollaboration(activeRow)}>
-            <ContentPasteIcon sx={{ marginRight: "1rem", color: "gray" }} />
+            <ContentPasteIcon className="menu-icon" />
             {getLocaleString("common_join")}
           </ActionMenuItem>
           <ActionMenuItem onClick={() => handleEditDocument(activeRow)}>
-            <EditIcon sx={{ marginRight: "1rem", color: "gray" }} />
+            <EditIcon className="menu-icon" />
             {getLocaleString("common_edit")}
           </ActionMenuItem>
           <ActionMenuItem onClick={() => handleOpenRemoveModal(activeRow)}>
-            <DeleteIcon sx={{ marginRight: "1rem", color: "gray" }} />
+            <DeleteIcon className="menu-icon" />
             {getLocaleString("common_delete")}
           </ActionMenuItem>
         </Menu>
@@ -372,6 +374,7 @@ const Document = () => {
           open={openModal}
           close={handleCloseModal}
           create={handleCreateDocument}
+          update={handleUpdateDocument}
           data={activeDocument}
         />
       )}

@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Box, Button, Menu, Pagination, Typography } from "@mui/material";
+import { Box, Button, Menu, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import DifferenceIcon from "@mui/icons-material/Difference";
 import ReviewsIcon from "@mui/icons-material/Reviews";
@@ -19,6 +18,7 @@ import {
   updatePrescription,
   deletePrescription,
   ToastService,
+  getPlan,
 } from "../../../services";
 import CustomDataGrid from "../../../components/common/DataGrid";
 import CreatePrescriptionModal from "../../../components/Modal/CreatePrescriptionModal";
@@ -29,7 +29,11 @@ import {
   ActionMenuItem,
   ContentHeader,
   ContentWrapper,
+  MoreActionsIcon,
 } from "../../style";
+import ViewPrescriptionModal from "../../../components/Modal/ViewPrescriptionModal";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import debounce from "lodash/debounce";
 
 const Prescription = () => {
   const { t } = useTranslation();
@@ -42,14 +46,17 @@ const Prescription = () => {
   const [activePrescription, setActivePrescription] = useState(null);
   const [activeRow, setActiveRow] = useState(null);
   const isOpen = Boolean(anchorEl);
-
-  const pageSize = 10;
-  const [page, setPage] = useState(1);
-  const [totalPage, setTotalPage] = useState();
+  const [rowLength, setRowLength] = useState(0);
   const [filterModel, setFilterModel] = useState({ items: [] });
   const [removeItem, setRemoveItem] = useState(undefined);
   const [openRemoveModal, setOpenRemoveModal] = useState(false);
+  const [openViewModal, setOpenViewModal] = useState(false);
   const getLocaleString = (key) => t(key);
+
+  const [paginationModel, setPaginationModel] = useState({
+    pageSize: 10,
+    page: 0,
+  });
 
   const handleClick = (event, row) => {
     setActiveRow(row);
@@ -69,15 +76,19 @@ const Prescription = () => {
     setFilterModel(filter);
   };
 
+  const handleDebounceChangeSearch = debounce(handleChangedSearch, 500);
+
   const getAllPrescriptions = useCallback(() => {
-    let query = {};
-    query.pageSize = pageSize;
-    query.page = page;
-    query.filters = filterModel.items.map((item) => ({
-      field: item.field,
-      operator: item.operator,
-      value: item.value,
-    }));
+    let query = {
+      pageSize: paginationModel.pageSize,
+      page: paginationModel.page,
+      filters: filterModel.items.map((item) => ({
+        field: item.field,
+        operator: item.operator,
+        value: item.value,
+      })),
+      filtersOperator: filterModel.logicOperator,
+    };
     if (id) {
       query.filters.push({
         field: "plan",
@@ -85,79 +96,69 @@ const Prescription = () => {
         value: id,
       });
     }
-    query.filtersOperator = filterModel.logicOperator;
     return getPrescriptions(query);
-  }, [id, pageSize, page, filterModel]);
+  }, [id, paginationModel, filterModel]);
 
   useEffect(() => {
-    if (
-      filterModel.items.find(
-        (item) =>
-          item.operator !== "isEmpty" &&
-          item.operator !== "isNotEmpty" &&
-          (item.value === undefined ||
-            item.value === null ||
-            item.value === ""),
-      )
-    ) {
-      return;
-    }
-    getAllPrescriptions()
-      .then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setPrescriptions(data.rows);
-      })
+    getPlan(id).then(() => {
+      if (
+        filterModel.items.find(
+          (item) =>
+            item.operator !== "isEmpty" &&
+            item.operator !== "isNotEmpty" &&
+            (item.value === undefined ||
+              item.value === null ||
+              item.value === ""),
+        )
+      ) {
+        return;
+      }
+      getAllPrescriptions()
+        .then((data) => {
+          setRowLength(data.count);
+          setPrescriptions(data.rows);
+        })
+        .catch((err) => {
+          console.log("err=>", err);
+        });
+    })
       .catch((err) => {
         console.log("err=>", err);
-        ToastService.error(getLocaleString("toast_load_prescriptions_failed"));
-      });
+        navigate("/main-flow");
+      })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getAllPrescriptions, filterModel]);
+  }, [getAllPrescriptions, filterModel, paginationModel]);
 
   const handleCreate = async (data) => {
-    try {
-      const createData = {
-        ...data,
-        userId: account.id,
-        planId: id,
-        user: account.role.name,
-      };
-      await createPrescription(createData).then((res) => {
-        ToastService.success(getLocaleString(res.message));
-      });
-      await getAllPrescriptions().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setPrescriptions(data.rows);
-      });
-    } catch (err) {
-      console.log("err=> ", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
+    const createData = {
+      ...data,
+      userId: account.id,
+      planId: id,
+      user: account.role.name,
+    };
+    await createPrescription(createData).then((res) => {
+      ToastService.success(getLocaleString(res.message));
+    });
+    await getAllPrescriptions().then((data) => {
+      setRowLength(data.count);
+      setPrescriptions(data.rows);
+    });
     setOpenModal(false);
   };
 
   const handleUpdate = async (id, data) => {
-    try {
-      const updateData = {
-        ...data,
-        planId: id,
-        user: account.role.name,
-      };
-      await updatePrescription(id, updateData).then((res) => {
-        ToastService.success(getLocaleString(res.message));
-      });
-      await getAllPrescriptions().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setPrescriptions(data.rows);
-      });
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
+    const updateData = {
+      ...data,
+      planId: id,
+      user: account.role.name,
+    };
+    await updatePrescription(id, updateData).then((res) => {
+      ToastService.success(getLocaleString(res.message));
+    });
+    await getAllPrescriptions().then((data) => {
+      setRowLength(data.count);
+      setPrescriptions(data.rows);
+    });
     setOpenModal(false);
   };
 
@@ -183,31 +184,32 @@ const Prescription = () => {
     setOpenRemoveModal(true);
   };
 
+  const handleOpenViewModal = (row) => {
+    setOpenViewModal(true);
+    setActivePrescription(prescriptions[row.no - 1]);
+  };
+
+  const handleCloseViewModal = () => {
+    handleClose();
+    setOpenViewModal(false);
+  };
+
   const handleCloseRemoveModal = () => {
     handleClose();
     setOpenRemoveModal(false);
   };
 
   const handleRemovePrescription = async () => {
-    try {
-      await deletePrescription(removeItem.id).then((res) => {
+    await deletePrescription(removeItem.id)
+      .then((res) => {
         ToastService.success(getLocaleString(res.message));
       });
       await getAllPrescriptions().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
+        setRowLength(data.count);
         setPrescriptions(data.rows);
       });
-    } catch (err) {
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
     handleClose();
     setOpenRemoveModal(false);
-  };
-
-  const handleChangePage = (event, value) => {
-    setPage(value);
   };
 
   const handleGoBack = () => {
@@ -258,7 +260,7 @@ const Prescription = () => {
           aria-expanded={isOpen ? "true" : undefined}
           onClick={(event) => handleClick(event, row)}
         >
-          <MoreVertIcon sx={{ color: "gray" }} />
+          <MoreActionsIcon />
         </Button>
       </ActionMenuButtonWrapper>
     );
@@ -270,25 +272,29 @@ const Prescription = () => {
       headerName: getLocaleString("common_table_number"),
       editable: false,
       filterable: false,
-      flex: 0.5,
+      flex: 1,
+      minWidth: 100,
     },
     {
       field: "title",
       headerName: getLocaleString("common_table_title"),
       editable: false,
-      flex: 1,
+      flex: 2,
+      minWidth: 200,
     },
     {
       field: "owner",
       headerName: getLocaleString("common_table_owner"),
       editable: false,
       flex: 1,
+      minWidth: 150,
     },
     {
       field: "plan",
       headerName: getLocaleString("common_table_plan"),
       editable: false,
       flex: 1,
+      minWidth: 300,
     },
     {
       field: "approvalStatus",
@@ -296,6 +302,7 @@ const Prescription = () => {
       editable: false,
       filterable: false,
       flex: 1,
+      minWidth: 150,
       renderCell: ({ row }) => {
         const approvalStatus = JSON.parse(row?.approvalStatus || "{}");
         const masterStatus = approvalStatus[UserRoles.MASTER];
@@ -303,7 +310,7 @@ const Prescription = () => {
         return (
           <Box>
             <Box display="flex" height={26} alignItems="center">
-              <Box mr={1}>Master:</Box>
+              <Box mr={1}>{getLocaleString("Master")}:</Box>
               {masterStatus === 1 ? (
                 <CheckIcon sx={{ fontSize: 16 }} />
               ) : (
@@ -311,7 +318,7 @@ const Prescription = () => {
               )}
             </Box>
             <Box display="flex" height={26} alignItems="center">
-              <Box mr={1}>Submaster:</Box>
+              <Box mr={1}>{getLocaleString("Sub Master")}:</Box>
               {subMasterStatus === 1 ? (
                 <CheckIcon sx={{ fontSize: 16 }} />
               ) : (
@@ -327,6 +334,7 @@ const Prescription = () => {
       headerName: getLocaleString("modal_comment_label"),
       editable: false,
       flex: 1,
+      minWidth: 250,
     },
     {
       field: "createdAt",
@@ -334,6 +342,7 @@ const Prescription = () => {
       editable: false,
       type: "date",
       flex: 1,
+      minWidth: 100,
       renderCell: ({ row }) =>
         moment(row.createdAt).utc(false).format("YYYY-MM-DD"),
     },
@@ -343,6 +352,7 @@ const Prescription = () => {
       editable: false,
       type: "date",
       flex: 1,
+      minWidth: 100,
       renderCell: ({ row }) =>
         moment(row.updatedAt).utc(false).format("YYYY-MM-DD"),
     },
@@ -352,6 +362,7 @@ const Prescription = () => {
       editable: false,
       filterable: false,
       flex: 1,
+      minWidth: 100,
       renderCell: ({ row }) => {
         const approvalStatus = JSON.parse(row?.approvalStatus || "{}");
         const masterStatus = approvalStatus[UserRoles.MASTER];
@@ -370,17 +381,18 @@ const Prescription = () => {
     },
     {
       field: "action",
-      headerName: "",
+      headerName: getLocaleString("common_table_action"),
       filterable: false,
       editable: false,
-      flex: 1,
+      sortable: false,
       renderCell,
+      width: 100,
     },
   ];
 
   const rows = prescriptions?.map((item, index) => ({
     ...item,
-    no: (page - 1) * pageSize + index + 1,
+    no: paginationModel.page * paginationModel.pageSize + index + 1,
     owner: item?.user.name,
     plan: item?.plan.title,
     approvalStatus: item?.approvalStatus,
@@ -422,18 +434,12 @@ const Prescription = () => {
         rows={rows}
         columns={typeTableColumns}
         filterMode="server"
+        rowLength={rowLength}
+        onPaginationModelChange={setPaginationModel}
+        paginationModel={paginationModel}
         filterModel={filterModel}
-        onFilterChanged={(filter) => handleChangedSearch(filter)}
+        onFilterChanged={handleDebounceChangeSearch}
       />
-      <Box display="flex" alignItems="center" justifyContent="center" pt={4}>
-        <Pagination
-          color="primary"
-          shape="rounded"
-          count={totalPage}
-          page={page}
-          onChange={handleChangePage}
-        />
-      </Box>
       {isOpen && (
         <Menu
           id="basic-menu"
@@ -447,7 +453,7 @@ const Prescription = () => {
           {(account.role.name === UserRoles.MASTER ||
             account.role.name === UserRoles.SUBMASTER) && (
             <ActionMenuItem onClick={() => handleEditPrescription(activeRow)}>
-              <ReviewsIcon sx={{ marginRight: "1rem", color: "gray" }} />
+              <ReviewsIcon className="menu-icon" />
               {getLocaleString("common_review")}
             </ActionMenuItem>
           )}
@@ -459,8 +465,14 @@ const Prescription = () => {
             {getLocaleString("common_compare")}
           </ActionMenuItem>
           {account.role.name === UserRoles.EDITOR && (
+            <ActionMenuItem onClick={() => handleOpenViewModal(activeRow)}>
+              <VisibilityIcon className="menu-icon" />
+              {getLocaleString("common_view")}
+            </ActionMenuItem>
+          )}
+          {account.role.name === UserRoles.EDITOR && (
             <ActionMenuItem onClick={() => handleOpenRemoveModal(activeRow)}>
-              <DeleteIcon sx={{ marginRight: "1rem", color: "gray" }} />
+              <DeleteIcon className="menu-icon" />
               {getLocaleString("common_delete")}
             </ActionMenuItem>
           )}
@@ -472,6 +484,11 @@ const Prescription = () => {
         close={() => setOpenModal(false)}
         create={handleCreate}
         update={handleUpdate}
+      />
+      <ViewPrescriptionModal
+        open={openViewModal}
+        data={activePrescription}
+        close={handleCloseViewModal}
       />
       <ConfirmModal
         content="toast_delete_prescription_confirm_message"

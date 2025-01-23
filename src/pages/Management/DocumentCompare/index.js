@@ -26,6 +26,7 @@ const DocumentComparePage = () => {
       .catch((err) => {
         console.log("err=>", err);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planId, documentId]);
 
   const handleGoBack = () => {

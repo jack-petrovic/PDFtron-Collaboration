@@ -1,19 +1,16 @@
+import { Suspense } from "react";
 import "./App.css";
 import AppRoutes from "./routes";
 import { Box } from "@mui/material";
 
-function App() {
+const App = () => {
   return (
-    <Box
-      sx={{
-        width: "100vw",
-        height: "100vh",
-        overflowX: "hidden",
-      }}
-    >
-      <AppRoutes />
-    </Box>
+    <Suspense>
+      <Box className="route-container">
+        <AppRoutes />
+      </Box>
+    </Suspense>
   );
-}
+};
 
 export default App;

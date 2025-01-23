@@ -1,11 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import CloseIcon from "@mui/icons-material/Close";
 import {
   Box,
-  Button,
   Divider,
   FormControlLabel,
   Modal,
@@ -18,7 +17,7 @@ import { useAuthState } from "../../../hooks/redux";
 import { sendNotification } from "../../../utils/helper";
 import { URL_WEB_SOCKET, UserRoles } from "../../../constants";
 import "react-quill/dist/quill.snow.css";
-import { CloseButtonBox, FormContainer } from "../style";
+import { CloseButtonBox, FormContainer, SubmitButton } from "../style";
 import CheckIcon from "@mui/icons-material/Check";
 
 const validationSchema = Yup.object().shape({
@@ -29,7 +28,7 @@ const validationSchema = Yup.object().shape({
 
 const CreatePrescriptionModal = ({ data, open, close, create, update }) => {
   const { t } = useTranslation();
-  const editing = !!data;
+  const editing = Boolean(data);
   const id = data?.id;
   const { account } = useAuthState();
   const [text, setText] = useState("");
@@ -40,16 +39,9 @@ const CreatePrescriptionModal = ({ data, open, close, create, update }) => {
   const [disabled, setDisabled] = useState(false);
   const getLocaleString = (key) => t(key);
 
-  const handleSubmit = async (data) => {
+  const handleSubmit = async (formData) => {
     if (disabled) return;
-    if (!editing) {
-      create(data);
-    } else {
-      update(id, data);
-    }
-    form.resetForm();
-    setHtml("");
-    setText("");
+    editing ? update(id, formData) : create(formData);
   };
 
   const form = useFormik({
@@ -64,39 +56,34 @@ const CreatePrescriptionModal = ({ data, open, close, create, update }) => {
   });
 
   useEffect(() => {
-    if (data) {
+    if (data && open) {
+      const parsedContent = JSON.parse(data.content || "{}");
       form.setValues({
         title: data.title,
         content: data.content,
-        comment: data.comment || "",
+        comment: data.comment,
         approvalStatus: data.approvalStatus,
       });
-      setContent(JSON.parse(data.content || "{}"));
-      setHtml(JSON.parse(data.content)["updated"]?.html || "{}");
-      setText(JSON.parse(data.content)["updated"]?.text || "{}");
+      setContent(parsedContent);
+      setHtml(parsedContent["updated"]?.html || "");
+      setText(parsedContent["updated"]?.text || "");
     } else {
-      form.setValues({
-        title: "",
-        content: "",
-        comment: "",
-        approvalStatus: "{}",
-      });
-      setContent(JSON.parse("{}"));
+      form.resetForm();
+      setContent({});
       setHtml("");
       setText("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
+  }, [data, open]);
 
   useEffect(() => {
-    const saveData = {};
-    const finalData = content;
-    saveData["text"] = text;
-    saveData["html"] = html;
+    const finalData = {
+      ...content,
+      updated: { text, html },
+    };
     if (account.role.name) {
-      finalData[account.role.name] = saveData;
+      finalData[account.role.name] = { text, html };
     }
-    finalData["updated"] = saveData;
     setContent(finalData);
     form.setFieldValue(
       "content",
@@ -104,6 +91,21 @@ const CreatePrescriptionModal = ({ data, open, close, create, update }) => {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [html, text]);
+
+  const isChanged = useMemo(
+    () =>
+      (data && (
+        form.values.title !== data?.title ||
+        form.values.content !== data?.content ||
+        form.values.approvalStatus !== data?.approvalStatus ||
+        form.values.comment !== data?.comment
+      )) || (!data && (
+        form.values.title !== "" ||
+        form.values.approvalStatus !== "{}" ||
+        form.values.comment !== ""
+      ))
+    , [form.values, data]
+  );
 
   const connectionRef = useRef(null);
 
@@ -114,41 +116,19 @@ const CreatePrescriptionModal = ({ data, open, close, create, update }) => {
     };
   }, []);
 
-  const handleReject = () => {
+  const updateApprovalStatus = (status) => {
     const currentStatus = JSON.parse(form.values.approvalStatus || "{}");
-    const newStatus = {
-      ...currentStatus,
-    };
-    newStatus[account.role.name] = -1;
-    form.setFieldValue("approvalStatus", JSON.stringify(newStatus));
+    currentStatus[account.role.name] = status;
+    form.setFieldValue("approvalStatus", JSON.stringify(currentStatus));
     sendNotification(
       connectionRef.current,
       account.id,
       "notification",
       {
-        key: "toast_notification_reject_prescription",
-        data: {
-          user: account.name,
-          prescription: form.getFieldProps("title").value,
-        },
-      },
-      "prescription",
-    );
-  };
-
-  const handleApprove = () => {
-    const currentStatus = JSON.parse(form.values.approvalStatus || "{}");
-    const newStatus = {
-      ...currentStatus,
-    };
-    newStatus[account.role.name] = 1;
-    form.setFieldValue("approvalStatus", JSON.stringify(newStatus));
-    sendNotification(
-      connectionRef.current,
-      account.id,
-      "notification",
-      {
-        key: "toast_notification_approve_prescription",
+        key:
+          status === 1
+            ? "toast_notification_approve_prescription"
+            : "toast_notification_reject_prescription",
         data: {
           user: account.name,
           prescription: form.getFieldProps("title").value,
@@ -165,18 +145,13 @@ const CreatePrescriptionModal = ({ data, open, close, create, update }) => {
   }, [form.values.approvalStatus]);
 
   const handleChangeComment = (e) => {
-    const currentComment = form.values.comment;
-    const newComment = JSON.parse(currentComment || "{}");
-    newComment[account.role.name] = e.target.value;
-    form.setFieldValue("comment", JSON.stringify(newComment));
+    const currentComment = JSON.parse(form.values.comment || "{}");
+    currentComment[account.role.name] = e.target.value;
+    form.setFieldValue("comment", JSON.stringify(currentComment));
   };
 
   const handleChangeStatus = (e) => {
-    if (e.target.checked) {
-      handleApprove();
-    } else {
-      handleReject();
-    }
+    e.target.checked ? updateApprovalStatus(1) : updateApprovalStatus(-1);
   };
 
   return (
@@ -260,7 +235,7 @@ const CreatePrescriptionModal = ({ data, open, close, create, update }) => {
                     </Typography>
                     <Box>
                       <Box display="flex" alignItems="center">
-                        <Box mr={1}>Master:</Box>
+                        <Box mr={1}>{getLocaleString("Master")}:</Box>
                         {masterStatus === 1 ? (
                           <CheckIcon sx={{ fontSize: 16 }} />
                         ) : (
@@ -268,7 +243,7 @@ const CreatePrescriptionModal = ({ data, open, close, create, update }) => {
                         )}
                       </Box>
                       <Box display="flex" alignItems="center">
-                        <Box mr={1}>Submaster:</Box>
+                        <Box mr={1}>{getLocaleString("Sub Master")}:</Box>
                         {subMasterStatus === 1 ? (
                           <CheckIcon sx={{ fontSize: 16 }} />
                         ) : (
@@ -287,17 +262,14 @@ const CreatePrescriptionModal = ({ data, open, close, create, update }) => {
                 account.role.name === UserRoles.MASTER ||
                 account.role.name === UserRoles.SUBMASTER ||
                 !editing) && (
-                <Button
+                <SubmitButton
                   type="submit"
                   variant="contained"
                   color="primary"
-                  disabled={disabled}
-                  sx={{ textTransform: "capitalize", marginTop: "1rem" }}
+                  disabled={disabled || !isChanged}
                 >
-                  {editing
-                    ? getLocaleString("common_save")
-                    : getLocaleString("common_create")}
-                </Button>
+                  {getLocaleString("common_submit")}
+                </SubmitButton>
               )}
             </Box>
           </form>

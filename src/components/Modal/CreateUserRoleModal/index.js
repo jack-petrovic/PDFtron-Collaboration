@@ -1,11 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import CloseIcon from "@mui/icons-material/Close";
 import {
   Box,
-  Button,
   Checkbox,
   FormControlLabel,
   Grid,
@@ -13,7 +12,7 @@ import {
   Switch,
   TextField,
 } from "@mui/material";
-import { CloseButtonBox, FormContainer } from "../style";
+import { CloseButtonBox, FormContainer, SubmitButton } from "../style";
 
 const validationSchema = Yup.object().shape({
   name: Yup.string().required("register_name_required"),
@@ -21,20 +20,12 @@ const validationSchema = Yup.object().shape({
 
 const CreateUserRoleModal = ({ data, open, close, create, update }) => {
   const { t } = useTranslation();
-  const editing = !!data;
+  const editing = Boolean(data);
   const id = data?.id;
   const getLocaleString = (key) => t(key);
-  const handleSubmit = async (data) => {
-    try {
-      if (!editing) {
-        await create(data);
-      } else {
-        await update(id, data);
-      }
-      form.resetForm();
-    } catch (error) {
-      console.error("Error submitting form:", error);
-    }
+
+  const handleSubmit = (data) => {
+    editing ? update(id, data) : create(data);
   };
 
   const form = useFormik({
@@ -49,7 +40,7 @@ const CreateUserRoleModal = ({ data, open, close, create, update }) => {
   });
 
   useEffect(() => {
-    if (open) {
+    if (data && open) {
       form.setValues({
         name: data?.name || "",
         color: data?.color || "#000000",
@@ -61,6 +52,22 @@ const CreateUserRoleModal = ({ data, open, close, create, update }) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, open]);
+
+  const isChanged = useMemo(
+    () =>
+      (data && (
+        form.values.name !== data?.name ||
+        form.values.archived !== data?.archived ||
+        form.values.color !== data?.color ||
+        form.values.signature !== data?.signature
+      )) || (!data && (
+        form.values.name !== "" ||
+        form.values.archived !== false ||
+        form.values.color !== "#000000" ||
+        form.values.signature !== false
+      ))
+    , [form.values, data]
+  );
 
   const handleSwitchArchived = () => {
     form.setFieldValue("archived", !form.values.archived);
@@ -142,16 +149,11 @@ const CreateUserRoleModal = ({ data, open, close, create, update }) => {
               <CloseButtonBox>
                 <CloseIcon onClick={close} />
               </CloseButtonBox>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                sx={{ textTransform: "capitalize", marginTop: "1rem" }}
-              >
-                {!editing
-                  ? getLocaleString("common_create")
-                  : getLocaleString("common_save")}
-              </Button>
+              <SubmitButton type="submit" variant="contained" color="primary" disabled={!isChanged}>
+                {editing
+                  ? getLocaleString("common_save")
+                  : getLocaleString("common_create")}
+              </SubmitButton>
             </Box>
           </form>
         </FormContainer>

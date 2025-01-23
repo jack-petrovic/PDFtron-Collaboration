@@ -22,10 +22,7 @@ const DetailMessageModal = ({ data, open, close }) => {
         </Typography>
         <Divider style={{ marginTop: "10px", marginBottom: "10px" }} />
         <div className="break-all">
-          {t(
-            JSON.parse(data?.content).key,
-            JSON.parse(data?.content).data,
-          )}
+          {t(JSON.parse(data?.content).key, JSON.parse(data?.content).data)}
         </div>
         <div className="grid justify-items-stretch my-5">
           <div className="justify-self-end text-sm">

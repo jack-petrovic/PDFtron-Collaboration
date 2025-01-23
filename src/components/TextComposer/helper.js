@@ -1,4 +1,4 @@
-export function getCurrentWord(editor) {
+export const getCurrentWord = (editor) => {
   const range = editor.getSelection();
   if (range) {
     let startPos = range.index - 1;
@@ -16,7 +16,7 @@ export function getCurrentWord(editor) {
     return editor.getText(startPos, endPos - startPos);
   }
   return null;
-}
+};
 
 export const getWordsWithPositions = (text) => {
   return new Promise((resolve) => {

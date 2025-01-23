@@ -2,23 +2,19 @@
   text-align: center;
 }
 
-.avatar {
-  height: 150px;
-  width: 150px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  border-radius: 50%;
-  margin-right: 6px;
-}
-
-.avatar:hover {
-  cursor: pointer;
+.route-container {
+  width: 100vw;
+  height: 100vh;
+  overflow-x: hidden;
 }
 
 .icon-avatar {
   transform: scale(1.4);
+}
+
+.menu-icon {
+  margin-right: 1rem;
+  color: gray;
 }
 
 .user-header {

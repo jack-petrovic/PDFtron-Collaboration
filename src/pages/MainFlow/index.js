@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Box, Button, Pagination, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import StickyNote2Icon from "@mui/icons-material/StickyNote2";
 import moment from "moment";
 import CustomDataGrid from "../../components/common/DataGrid";
@@ -10,29 +10,37 @@ import { ContentHeader, ContentWrapper } from "../style";
 import { useAuthState } from "../../hooks/redux";
 import { UserRoles } from "../../constants";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
+import debounce from "lodash/debounce";
 
 const ProgressingPlan = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [plans, setPlans] = useState({ rows: [], count: 0 });
-  const [page, setPage] = useState(1);
-  const pageSize = 10;
-  const [totalPage, setTotalPage] = useState(0);
+  const [rowLength, setRowLength] = useState(0);
   const { t } = useTranslation();
   const { account } = useAuthState();
   const [filterModel, setFilterModel] = useState({ items: [] });
+
+  const [paginationModel, setPaginationModel] = useState({
+    pageSize: 10,
+    page: 0,
+  });
+
   const getLocaleString = (key) => t(key);
+
   const handleChangedSearch = (filter) => {
     setFilterModel(filter);
   };
 
+  const handleDebounceChangeSearch = debounce(handleChangedSearch, 500);
+
   const getProgressingPlans = useCallback(() => {
     let query = {};
-    query.pageSize = pageSize;
-    query.page = page;
+    query.pageSize = paginationModel.pageSize;
+    query.page = paginationModel.page;
     if (account?.name === UserRoles.MASTER) {
       query.sectionId = account?.sectionId;
     } else if (account?.name === UserRoles.SUBMASTER) {
+      query.sectionId = account?.sectionId;
       query.subsectionId = account?.subsectionId;
     } else if (account?.name === UserRoles.EDITOR) {
       query.sectionId = account?.sectionId;
@@ -48,7 +56,7 @@ const ProgressingPlan = () => {
     query.filtersOperator = filterModel.logicOperator;
     return getProgressPlans(query);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterModel, pageSize, page]);
+  }, [filterModel, paginationModel]);
 
   useEffect(() => {
     if (
@@ -65,17 +73,14 @@ const ProgressingPlan = () => {
     }
     getProgressingPlans()
       .then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
+        if (!data.count) {
+          ToastService.warning(getLocaleString("common_table_no_plan"));
+        }
+        setRowLength(data.count);
         setPlans(data);
-      })
-      .catch((err) => {
-        ToastService.showHttpError(
-          err,
-          getLocaleString("toast_load_progress_plans_failed"),
-        );
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getProgressingPlans, filterModel]);
+  }, [getProgressingPlans, filterModel, paginationModel]);
 
   const handleDetailPlan = (item) => {
     navigate(`plan/${item.id}`);
@@ -96,31 +101,35 @@ const ProgressingPlan = () => {
       headerName: getLocaleString("common_table_number"),
       editable: false,
       filterable: false,
-      flex: 0.5,
+      width: 100,
     },
     {
       field: "title",
       headerName: getLocaleString("common_table_title"),
       editable: false,
       flex: 3,
+      minWidth: 250,
     },
     {
       field: "section",
       headerName: getLocaleString("common_table_section"),
       editable: false,
       flex: 1,
+      minWidth: 150,
     },
     {
       field: "subsection",
       headerName: getLocaleString("common_table_subsection"),
       editable: false,
       flex: 1,
+      minWidth: 150,
     },
     {
       field: "startDate",
       headerName: getLocaleString("common_table_start_date"),
       editable: false,
       flex: 1,
+      minWidth: 150,
       type: "date",
       renderCell: ({ row }) =>
         moment(row.startDate).utc(false).format("YYYY-MM-DD"),
@@ -130,6 +139,7 @@ const ProgressingPlan = () => {
       headerName: getLocaleString("common_table_end_date"),
       editable: false,
       flex: 1,
+      minWidth: 150,
       type: "date",
       renderCell: ({ row }) =>
         moment(row.endDate).utc(false).format("YYYY-MM-DD"),
@@ -139,23 +149,25 @@ const ProgressingPlan = () => {
       headerName: getLocaleString("common_table_publish_date"),
       editable: false,
       flex: 1,
+      minWidth: 150,
       type: "date",
       renderCell: ({ row }) =>
         moment(row.publishDate).utc(false).format("YYYY-MM-DD"),
     },
     {
       field: "action",
-      headerName: "",
+      headerName: getLocaleString("common_table_action"),
       editable: false,
       filterable: false,
-      flex: 1.5,
+      sortable: false,
+      width: 175,
       renderCell,
     },
   ];
 
   const rows = plans.rows.map((row, index) => ({
     ...row,
-    no: (page - 1) * pageSize + index + 1,
+    no: paginationModel.page * paginationModel.pageSize + index + 1,
     section: row.section?.name || "None",
     subsection: row.subsection?.name || "None",
     sectionId: row.section?.id,
@@ -164,12 +176,8 @@ const ProgressingPlan = () => {
     endDate: moment(row.endDate).toDate(),
     publishDate: moment(row.publishDate).toDate(),
   }));
-  const handleChangePage = (event, value) => {
-    setPage(value);
-  };
+
   const handleGoBack = () => {
-    // const pathArr = location.pathname.split("/");
-    // navigate(`${pathArr.slice(0, pathArr.length - 1).join("/")}`);
     navigate("/");
   };
 
@@ -201,18 +209,12 @@ const ProgressingPlan = () => {
         rows={rows}
         columns={planTableColumns}
         filterMode="server"
+        rowLength={rowLength}
+        onPaginationModelChange={setPaginationModel}
+        paginationModel={paginationModel}
         filterModel={filterModel}
-        onFilterChanged={(filter) => handleChangedSearch(filter)}
+        onFilterChanged={handleDebounceChangeSearch}
       />
-      <Box display="flex" alignItems="center" justifyContent="center" pt={4}>
-        <Pagination
-          color="primary"
-          shape="rounded"
-          count={totalPage}
-          page={page}
-          onChange={handleChangePage}
-        />
-      </Box>
     </ContentWrapper>
   );
 };

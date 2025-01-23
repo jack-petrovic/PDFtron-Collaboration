@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { LocalizationProvider } from "@mui/x-date-pickers";
@@ -6,13 +6,12 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import CloseIcon from "@mui/icons-material/Close";
 import {
   Box,
-  Button,
   Checkbox,
   FormControlLabel,
   Modal,
   TextField,
 } from "@mui/material";
-import { CloseButtonBox, FormContainer } from "../style";
+import { CloseButtonBox, FormContainer, SubmitButton } from "../style";
 import { useTranslation } from "react-i18next";
 
 const validationSchema = Yup.object().shape({
@@ -21,16 +20,16 @@ const validationSchema = Yup.object().shape({
 
 const CreateStageModal = ({ data, open, close, create, update }) => {
   const { t } = useTranslation();
-  const editing = !!data;
+  const editing = Boolean(data);
   const id = data?.id;
   const getLocaleString = (key) => t(key);
-  const handleSubmit = async (data) => {
-    if (!editing) {
-      create(data);
+
+  const handleSubmit = async (formData) => {
+    if (editing) {
+      update(id, formData);
     } else {
-      update(id, data);
+      create(formData);
     }
-    form.resetForm();
   };
 
   const form = useFormik({
@@ -41,38 +40,37 @@ const CreateStageModal = ({ data, open, close, create, update }) => {
       order: "0",
       start: new Date(),
       end: new Date(),
-      printPermission: false,
     },
     onSubmit: handleSubmit,
   });
 
   useEffect(() => {
-    if (data) {
+    if (data && open) {
       form.setValues({
         stageMode: data.stageMode,
         enabled: data.enabled,
         order: data.order,
-        printPermission: data.printPermission,
       });
     } else {
-      form.setValues({
-        stageMode: "",
-        enabled: false,
-        order: "0",
-        start: new Date(),
-        end: new Date(),
-        printPermission: false,
-      });
+      form.resetForm();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
+  }, [data, open]);
 
-  const handleEnableChange = () => {
-    form.setFieldValue("enabled", !form.values.enabled);
-  };
+  const isChanged = useMemo(
+    () =>
+      (data && (
+        form.values.stageMode !== data?.stageMode ||
+        form.values.enabled !== data?.enabled
+      )) || (!data && (
+        form.values.stageMode !== "" ||
+        form.values.enabled !== false
+      ))
+    , [form.values, data]
+  );
 
-  const handlePermissionChange = () => {
-    form.setFieldValue("printPermission", !form.values.printPermission);
+  const handleToggle = (field) => {
+    form.setFieldValue(field, !form.values[field]);
   };
 
   return (
@@ -87,7 +85,7 @@ const CreateStageModal = ({ data, open, close, create, update }) => {
           <FormContainer sx={{ width: "30% !important" }}>
             <form onSubmit={form.handleSubmit}>
               <Box display="flex" flexDirection="column" gap="8px">
-                <Box display="flex" alignItems="center" gap="1rem" mb={2}>
+                <Box display="flex" alignItems="center" gap="1rem" mb={1}>
                   <TextField
                     fullWidth
                     label={getLocaleString("modal_mode_label")}
@@ -110,36 +108,20 @@ const CreateStageModal = ({ data, open, close, create, update }) => {
                     control={
                       <Checkbox
                         checked={form.values.enabled}
-                        onChange={handleEnableChange}
+                        onChange={() => handleToggle("enabled")}
                       />
                     }
                     label={getLocaleString("common_table_enable")}
-                    className="mb-4"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={form.values.printPermission}
-                        onChange={handlePermissionChange}
-                      />
-                    }
-                    label={getLocaleString("common_table_print_enable")}
-                    className="mb-5"
                   />
                 </div>
                 <CloseButtonBox>
                   <CloseIcon onClick={close} />
                 </CloseButtonBox>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  sx={{ textTransform: "capitalize", marginTop: "1rem" }}
-                >
-                  {!editing
-                    ? getLocaleString("common_create")
-                    : getLocaleString("common_save")}
-                </Button>
+                <SubmitButton type="submit" variant="contained" color="primary" disabled={!isChanged}>
+                  {editing
+                    ? getLocaleString("common_save")
+                    : getLocaleString("common_create")}
+                </SubmitButton>
               </Box>
             </form>
           </FormContainer>

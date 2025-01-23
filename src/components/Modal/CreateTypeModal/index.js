@@ -1,17 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import CloseIcon from "@mui/icons-material/Close";
-import {
-  Box,
-  Button,
-  FormControlLabel,
-  Modal,
-  Switch,
-  TextField,
-} from "@mui/material";
-import { CloseButtonBox, FormContainer } from "../style";
+import { Box, FormControlLabel, Modal, Switch, TextField } from "@mui/material";
+import { CloseButtonBox, FormContainer, SubmitButton } from "../style";
 
 const validationSchema = Yup.object().shape({
   name: Yup.string().required("register_name_required"),
@@ -24,12 +17,7 @@ const CreateTypeModal = ({ data, open, close, create, update }) => {
   const getLocaleString = (key) => t(key);
 
   const handleSubmit = async (data) => {
-    if (!editing) {
-      create(data);
-    } else {
-      update(id, data);
-    }
-    form.resetForm();
+    editing ? update(id, data) : create(data);
   };
 
   const form = useFormik({
@@ -42,19 +30,28 @@ const CreateTypeModal = ({ data, open, close, create, update }) => {
   });
 
   useEffect(() => {
-    if (data) {
+    if (data && open) {
       form.setValues({
-        name: data.name,
-        archived: data.archived,
+        name: data.name || "",
+        archived: data.archived || false,
       });
     } else {
-      form.setValues({
-        name: "",
-        archived: false,
-      });
+      form.resetForm();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
+  }, [data, open]);
+
+  const isChanged = useMemo(
+    () =>
+      (data && (
+        form.values.name !== data?.name ||
+        form.values.archived !== data?.archived
+      )) || (!data && (
+        form.values.name !== "" ||
+        form.values.archived !== false
+      ))
+    , [form.values, data]
+  );
 
   const handleSwitchArchived = () => {
     if (form.values.archived) {
@@ -107,16 +104,11 @@ const CreateTypeModal = ({ data, open, close, create, update }) => {
               <CloseButtonBox>
                 <CloseIcon onClick={close} />
               </CloseButtonBox>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                sx={{ textTransform: "capitalize", marginTop: "1rem" }}
-              >
+              <SubmitButton type="submit" variant="contained" color="primary" disabled={!isChanged}>
                 {!editing
                   ? getLocaleString("common_create")
                   : getLocaleString("common_save")}
-              </Button>
+              </SubmitButton>
             </Box>
           </form>
         </FormContainer>

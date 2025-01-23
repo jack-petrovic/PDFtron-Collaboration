@@ -1,7 +1,7 @@
 import { get, post, put, remove } from "../http.service";
 
-export const getPrintLogs = (query, showSpinner = true) => {
-  return get(`/management/print-request/print-logs`, query, showSpinner);
+export const getFilteredPrintRequests = (query, showSpinner = true) => {
+  return get(`/management/print-request/filtered-requests`, query, showSpinner);
 };
 
 export const getPrintRequests = (query, showSpinner = true) => {

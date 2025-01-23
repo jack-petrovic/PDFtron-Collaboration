@@ -1,5 +1,5 @@
 import styled from "@emotion/styled";
-import { Box } from "@mui/material";
+import { Box, Button, FormControl, MenuItem } from "@mui/material";
 
 export const FormContainer = styled(Box)`
   position: relative;
@@ -12,6 +12,11 @@ export const FormContainer = styled(Box)`
     0 2px 4px -2px rgb(0 0 0 / 0.1);
 `;
 
+export const CustomFormControl = styled(FormControl)`
+  margin-bottom: 1rem;
+  max-height: 100px;
+`;
+
 export const CloseButtonBox = styled(Box)`
   position: absolute;
   right: 1rem;
@@ -19,8 +24,17 @@ export const CloseButtonBox = styled(Box)`
   cursor: pointer;
 `;
 
+export const SubmitButton = styled(Button)`
+  text-transform: capitalize;
+  margin-top: 1rem;
+`;
+
 export const FormBox = styled(Box)`
   padding: 1rem;
   max-height: 80vh;
   overflow-y: auto;
+`;
+
+export const MenuItemContainer = styled(MenuItem)`
+  height: 36px;
 `;
