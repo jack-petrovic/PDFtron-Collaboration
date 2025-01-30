@@ -1,5 +1,6 @@
 import styled from "@emotion/styled";
-import { Grid } from "@mui/material";
+import { Grid, IconButton, TextField } from "@mui/material";
+import LoadingButton from "@mui/lab/LoadingButton";
 
 export const ProfileContainer = styled(Grid)(() => ({
   flex: 1,
@@ -14,6 +15,8 @@ export const ProfileContainer = styled(Grid)(() => ({
     ".avatar": {
       width: 150,
       height: 150,
+      backgroundColor: '#D9D9D9',
+      cursor: 'pointer',
     },
 
     ".name": {
@@ -45,3 +48,41 @@ export const ProfileContainer = styled(Grid)(() => ({
     },
   },
 }));
+
+export const FormTextField = styled(TextField)`
+  margin-bottom: 1.5rem;
+`;
+
+export const ImageRemoveButton = styled(IconButton)`
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 2rem;
+  background-color: white;
+  color: lightgrey;
+  border: 3px solid lightgrey;
+  
+  &:focus, :hover {
+    background-color: white;
+  };
+`;
+
+export const ImageSaveButton = styled(LoadingButton)`
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 2rem;
+  padding: 2px 1px 2px 2px;
+  min-width: 0;
+  background-color: white;
+  color: lightgrey;
+  border: 3px solid lightgrey;
+
+  &:focus, :hover {
+    background-color: white;
+  };
+`;

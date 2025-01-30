@@ -1,18 +1,16 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   addSubPlanType,
   editSubPlanType,
   removeSubPlanType,
 } from "../../../redux/actions";
-import { Box, Button, Chip, Menu, Pagination, Typography } from "@mui/material";
+import { Box, Button, Menu, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import EditIcon from "@mui/icons-material/Edit";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import moment from "moment";
 import CustomDataGrid from "../../../components/common/DataGrid";
 import CreateSubPlanTypeModal from "../../../components/Modal/CreateSubPlanTypeModal";
@@ -26,13 +24,18 @@ import {
 import {
   ActionMenuButtonWrapper,
   ActionMenuItem,
+  ArchivedChip,
+  ArchivedIcon,
   ContentHeader,
   ContentWrapper,
+  MenuItemButton,
+  MoreActionsIcon,
 } from "../../style";
 import ConfirmModal from "../../../components/Modal/ConfirmModal";
 import { UserRoles } from "../../../constants";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useAuthState } from "../../../hooks/redux";
+import debounce from "lodash/debounce";
 
 const SubPlanType = () => {
   const { t } = useTranslation();
@@ -45,15 +48,26 @@ const SubPlanType = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [activeSubType, setActiveSubType] = useState(null);
   const [activeRow, setActiveRow] = useState(null);
+  const [rowLength, setRowLength] = useState(0);
   const isOpen = Boolean(anchorEl);
-  const pageSize = 10;
-  const [page, setPage] = useState(1);
-  const [totalPage, setTotalPage] = useState();
   const { account } = useAuthState();
   const [openRemoveModal, setOpenRemoveModal] = useState(false);
   const [removeItem, setRemoveItem] = useState(undefined);
   const [filterModel, setFilterModel] = useState({ items: [] });
+  const [planTypeName, setPlanTypeName] = useState("");
+  const planTypes = useSelector((state) => state.planTypeReducer.planTypes);
+
+  const [paginationModel, setPaginationModel] = useState({
+    pageSize: 10,
+    page: 0,
+  });
+
   const getLocaleString = (key) => t(key);
+
+  useEffect(() => {
+    setPlanTypeName(planTypes.find((item) => item?.id === id)?.name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const handleClick = (event, row) => {
     setActiveRow(row);
@@ -70,22 +84,25 @@ const SubPlanType = () => {
   };
 
   const getAllSubTypes = useCallback(() => {
-    let query = {};
-    query.id = id;
-    query.pageSize = pageSize;
-    query.page = page;
-    query.filters = filterModel.items.map((item) => ({
-      field: item.field,
-      operator: item.operator,
-      value: item.value,
-    }));
-    query.filtersOperator = filterModel.logicOperator;
+    let query = {
+      id: id,
+      pageSize: paginationModel.pageSize,
+      page: paginationModel.page,
+      filters: filterModel.items.map((item) => ({
+        field: item.field,
+        operator: item.operator,
+        value: item.value,
+      })),
+      filtersOperator: filterModel.logicOperator,
+    };
     return getSubPlanTypes(query);
-  }, [pageSize, page, filterModel, id]);
+  }, [paginationModel, filterModel, id]);
 
   const handleChangedSearch = (filter) => {
     setFilterModel(filter);
   };
+
+  const handleDebounceChangeSearch = debounce(handleChangedSearch, 500);
 
   useEffect(() => {
     if (
@@ -102,58 +119,44 @@ const SubPlanType = () => {
     }
     getAllSubTypes()
       .then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
+        setRowLength(data.count);
         setSubTypes(data.rows);
       })
       .catch((err) => {
         console.log("err=>", err);
-        ToastService.error(getLocaleString("toast_load_sub_plan_types_failed"));
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getAllSubTypes, filterModel, id]);
+  }, [getAllSubTypes, filterModel, id, paginationModel]);
 
   const handleCreateSubPlanType = async (data, id) => {
-    try {
-      await createSubType({
-        ...data,
-        planTypeId: id,
-      }).then((res) => {
-        ToastService.success(
-          getLocaleString("toast_create_sub_plan_type_success"),
-        );
-        dispatch(addSubPlanType(res));
-      });
-
-      await getAllSubTypes().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setSubTypes(data.rows);
-      });
-      setOpenModal(false);
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
+    await createSubType({
+      ...data,
+      planTypeId: id,
+    }).then((res) => {
+      ToastService.success(
+        getLocaleString("toast_create_sub_plan_type_success"),
       );
-    }
+      dispatch(addSubPlanType(res));
+    });
+
+    await getAllSubTypes().then((data) => {
+      setRowLength(data.count);
+      setSubTypes(data.rows);
+    });
+    setOpenModal(false);
   };
 
-  const handleUpdateSubPlanType = async (sub_id, data) => {
-    try {
-      await updateSubType(sub_id, data).then((res) => {
-        dispatch(editSubPlanType(res));
-        ToastService.success(
-          getLocaleString("toast_update_sub_plan_type_success"),
-        );
-      });
-      await getAllSubTypes().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setSubTypes(data.rows);
-      });
-    } catch (err) {
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
+  const handleUpdateSubPlanType = async (id, data, planTypeId) => {
+    await updateSubType(id, data).then((res) => {
+      dispatch(editSubPlanType({ ...res, planTypeId: planTypeId }));
+      ToastService.success(
+        getLocaleString("toast_update_sub_plan_type_success"),
       );
-    }
+    });
+    await getAllSubTypes().then((data) => {
+      setRowLength(data.count);
+      setSubTypes(data.rows);
+    });
     setOpenModal(false);
   };
 
@@ -174,27 +177,18 @@ const SubPlanType = () => {
   };
 
   const handleRemoveSubType = async () => {
-    try {
-      await deleteSubType(removeItem.id).then((res) => {
-        dispatch(removeSubPlanType(removeItem.id));
-        ToastService.success(getLocaleString(res.message));
-      });
-      await getAllSubTypes().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setSubTypes(data.rows);
-      });
-    } catch (err) {
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
+    await deleteSubType(removeItem.id).then((res) => {
+      dispatch(removeSubPlanType(removeItem.id));
+      ToastService.success(getLocaleString(res.message));
+    });
+    await getAllSubTypes().then((data) => {
+      setRowLength(data.count);
+      setSubTypes(data.rows);
+    });
     handleClose();
     setOpenRemoveModal(false);
   };
 
-  const handleChangePage = (event, value) => {
-    setPage(value);
-  };
 
   const renderCell = ({ row }) => {
     return (
@@ -206,7 +200,7 @@ const SubPlanType = () => {
           aria-expanded={isOpen ? "true" : undefined}
           onClick={(event) => handleClick(event, row)}
         >
-          <MoreVertIcon sx={{ color: "gray" }} />
+          <MoreActionsIcon />
         </Button>
       </ActionMenuButtonWrapper>
     );
@@ -219,21 +213,22 @@ const SubPlanType = () => {
       editable: false,
       filterable: false,
       flex: 0.5,
+      minWidth: 100,
     },
     {
       field: "name",
       headerName: getLocaleString("common_table_name"),
       editable: false,
       flex: 1,
+      minWidth: 250,
       renderCell: ({ row }) => (
         <React.Fragment key={row.no}>
           {row.name}
           {row.archived && (
-            <Chip
+            <ArchivedChip
               label={getLocaleString("common_table_archived")}
-              icon={<WarningAmberIcon sx={{ fontSize: "16px" }} />}
+              icon={<ArchivedIcon />}
               color="warning"
-              sx={{ marginLeft: "0.5rem" }}
             />
           )}
         </React.Fragment>
@@ -245,12 +240,15 @@ const SubPlanType = () => {
       editable: false,
       type: "boolean",
       flex: 1,
+      minWidth: 150,
     },
     {
-      field: "planTypeId",
+      field: "planType",
       headerName: getLocaleString("common_table_plan_type"),
       editable: false,
+      filterable: false,
       flex: 1,
+      minWidth: 150,
     },
     {
       field: "createdAt",
@@ -258,6 +256,7 @@ const SubPlanType = () => {
       editable: false,
       type: "date",
       flex: 1,
+      minWidth: 100,
       renderCell: ({ row }) =>
         moment(row.createdAt).utc(false).format("YYYY-MM-DD"),
     },
@@ -267,24 +266,26 @@ const SubPlanType = () => {
       editable: false,
       type: "date",
       flex: 1,
+      minWidth: 100,
       renderCell: ({ row }) =>
         moment(row.updatedAt).utc(false).format("YYYY-MM-DD"),
     },
     {
       field: "action",
-      headerName: "",
+      headerName: getLocaleString("common_table_action"),
       editable: false,
       filterable: false,
-      flex: 1,
+      sortable: false,
+      width: 100,
       renderCell,
     },
   ];
 
   const rows = subTypes.map((item, index) => ({
     ...item,
-    no: (page - 1) * pageSize + index + 1,
+    no: paginationModel.page * paginationModel.pageSize + index + 1,
     archived: item.archived,
-    planTypeId: item.planTypeId,
+    planType: planTypeName,
     createdAt: moment(item.createdAt).toDate(),
     updatedAt: moment(item.updatedAt).toDate(),
   }));
@@ -297,45 +298,41 @@ const SubPlanType = () => {
   return (
     <ContentWrapper>
       <ContentHeader>
-        <Box>
+        <Box className="mr-5">
           <Typography variant="h5">
             {getLocaleString("sub_plan_type_page_title")}
           </Typography>
         </Box>
-        <Box display="flex" justifyContent="between" gap="4px">
-          <Button
+        <Box className="sm:flex justify-between gap-1">
+          <MenuItemButton
             variant="outlined"
             startIcon={<AddIcon />}
             onClick={handleOpenModal}
+            className="w-full sm:w-auto"
           >
             {getLocaleString("common_create")}
-          </Button>
-          <Button
+          </MenuItemButton>
+          <MenuItemButton
             variant="outlined"
             startIcon={<ArrowBackIosIcon />}
             color="secondary"
             onClick={handleGoBack}
+            className="w-full sm:w-auto"
           >
             {getLocaleString("common_go_back")}
-          </Button>
+          </MenuItemButton>
         </Box>
       </ContentHeader>
       <CustomDataGrid
         rows={rows}
         columns={typeTableColumns}
         filterMode="server"
+        rowLength={rowLength}
+        onPaginationModelChange={setPaginationModel}
+        paginationModel={paginationModel}
         filterModel={filterModel}
-        onFilterChanged={(filter) => handleChangedSearch(filter)}
+        onFilterChanged={handleDebounceChangeSearch}
       />
-      <Box display="flex" alignItems="center" justifyContent="center" pt={4}>
-        <Pagination
-          color="primary"
-          shape="rounded"
-          count={totalPage}
-          page={page}
-          onChange={handleChangePage}
-        />
-      </Box>
       {isOpen && (
         <Menu
           id="basic-menu"
@@ -347,12 +344,12 @@ const SubPlanType = () => {
           }}
         >
           <ActionMenuItem onClick={() => handleEditSubPlanType(activeRow)}>
-            <EditIcon sx={{ marginRight: "1rem", color: "gray" }} />
+            <EditIcon className="menu-icon" />
             {getLocaleString("common_edit")}
           </ActionMenuItem>
           {account.role.name === UserRoles.SUPERADMIN && (
             <ActionMenuItem onClick={() => handleOpenRemoveModal(activeRow)}>
-              <DeleteIcon sx={{ marginRight: "1rem", color: "gray" }} />
+              <DeleteIcon className="menu-icon" />
               {getLocaleString("common_delete")}
             </ActionMenuItem>
           )}

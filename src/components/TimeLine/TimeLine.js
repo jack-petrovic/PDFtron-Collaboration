@@ -57,14 +57,18 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
   const getLocaleString = (key) => t(key);
 
   const stages = JSON.parse(plan?.stages || "[]").filter(
-      (stage) => stage.enabled,
+    (stage) => stage.enabled,
   );
 
   const fetchPrintRequests = () => {
     const userQuery = {};
-    getUsers(userQuery).then((res) => {
-      setUsers(res.rows);
-    });
+    getUsers(userQuery)
+      .then((res) => {
+        setUsers(res.rows);
+      })
+      .catch((err) => {
+        console.log("err=>", err);
+      });
     if (!plan) return;
     let query = {};
     query.filters = [
@@ -75,12 +79,12 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
       },
     ];
     getPrintRequests(query)
-        .then((res) => {
-          setPrintRequests(res?.rows);
-        })
-        .catch((err) => {
-          console.log("err=>", err);
-        });
+      .then((res) => {
+        setPrintRequests(res?.rows);
+      })
+      .catch((err) => {
+        console.log("err=>", err);
+      });
   };
 
   useEffect(() => {
@@ -103,7 +107,10 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
       })
       .catch((err) => {
         console.log("err=>", err);
-        ToastService.error(getLocaleString("common_network_error"));
+        ToastService.showHttpError(
+          err,
+          getLocaleString("toast_load_plans_failed"),
+        );
       });
   };
 
@@ -134,7 +141,7 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
         handleReadPlan();
       };
 
-      fileReader.onerror = (error) => {
+      fileReader.onerror = () => {
         ToastService.error(
           getLocaleString("toast_upload_live_document_failed"),
         );
@@ -179,7 +186,7 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
 
   const getFileName = (stage) => {
     return (
-        plan.live_documents?.find((item) => item?.stage === stage)?.fileName || ""
+      plan.live_documents?.find((item) => item?.stage === stage)?.fileName || ""
     );
   };
 
@@ -188,13 +195,13 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
     let prevDoc = null;
     const document = plan.live_documents?.find((item) => item?.stage === stage);
     await getDocument(document?.documentId)
-        .then((res) => {
-          doc = res.doc;
-          prevDoc = res.prevDoc;
-        })
-        .catch((err) => {
-          console.log("err=>", err);
-        });
+      .then((res) => {
+        doc = res.doc;
+        prevDoc = res.prevDoc;
+      })
+      .catch((err) => {
+        console.log("err=>", err);
+      });
 
     const stageApprovers =
       JSON.parse(plan.stages || "[]").find((item) => item?.id === datum.stageId)
@@ -204,18 +211,22 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
       updateDocument(document?.documentId, {
         ...document,
         completed: true,
-      }).then(handleReadPlan);
+      })
+        .then(handleReadPlan)
+        .catch((err) => {
+          console.log("err=>", err);
+        });
     }
 
     if (!doc) {
       ToastService.warning(getLocaleString("toast_timeline_stage_warning"));
     } else if (!prevDoc) {
       ToastService.warning(
-          getLocaleString("toast_timeline_previous_stage_warning"),
+        getLocaleString("toast_timeline_previous_stage_warning"),
       );
     } else {
       navigate(
-          `/result/${plan.live_documents?.find((item) => item?.stage === stage)?.documentId}`,
+        `/result/${plan.live_documents?.find((item) => item?.stage === stage)?.documentId}`,
       );
     }
   };
@@ -232,14 +243,22 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
 
   const checkReviewedAll = (datum, index, newStatus) => {
     const stageApprovers =
-        JSON.parse(plan.stages || "[]").find((item) => item?.id === datum.stageId)
-            ?.approvers || [];
+      JSON.parse(plan.stages || "[]").find((item) => item?.id === datum.stageId)
+        ?.approvers || [];
 
     return stageApprovers.every((approver) => {
       const approverId = users.find((user) => user?.name === approver)?.userId;
       return newStatus[approverId] === 1;
     });
   };
+
+  const isAbleToSeePrescriptions =
+    account.role.name === UserRoles.SUPERADMIN ||
+    account.role.name === UserRoles.ADMIN ||
+    account.role.name === UserRoles.SUPERMASTER ||
+    account.role.name === UserRoles.MASTER ||
+    account.role.name === UserRoles.SUBMASTER ||
+    account.role.name === UserRoles.EDITOR;
 
   const isCompared = (index) => {
     return plan.comparisons.find((value) => value.stage === index);
@@ -262,7 +281,7 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
         approvalStatus: JSON.stringify(newStatus),
         completed: checkedStatus,
       })
-        .then((res) => {
+        .then(() => {
           handleReadPlan();
           ToastService.success(
             t("toast_timeline_approve_status", {
@@ -359,16 +378,13 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
       })
       .catch((err) => {
         console.log("err=>", err);
-        ToastService.error(
-          getLocaleString("toast_timeline_send_print_request_failed"),
-        );
       });
     handleCloseConfirmModal();
   };
 
   const getPrintStatus = (stage) => {
     const stageRow = printRequests.find(
-        (value) => value.stage === stage && value.planId === plan?.id,
+      (value) => value.stage === stage && value.planId === plan?.id,
     );
     if (stageRow?.status) {
       return `(${stageRow?.status})`;
@@ -377,16 +393,9 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
     }
   };
 
-  const isPrinted = (index) => {
-    return (
-        plan?.currentStage === index &&
-        getPrintStatus(index).includes(PrintRequestStatus.DONE)
-    );
-  };
-
   const getComparison = (index) => {
     const stageCompareResults = plan.comparisons.findLast(
-        (value) => value.stage === index,
+      (value) => value.stage === index,
     );
     if (stageCompareResults)
       setResult(JSON.parse(stageCompareResults?.metaData || null));
@@ -395,24 +404,28 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
 
   const goToCollaboration = (index) => {
     navigate(
-        `/collaborate/${plan.live_documents?.find((item) => item?.stage === index)?.documentId}`,
+      `/collaborate/${plan.live_documents?.find((item) => item?.stage === index)?.documentId}`,
     );
   };
 
   const downloadFile = (stage) => {
     const doc = plan.live_documents?.find((item) => item?.stage === stage);
     if (doc) {
-      getDocumentDownload(doc.documentId).then((res) => {
-        const blob = new Blob([res]);
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = doc.fileName;
-        link.click();
+      getDocumentDownload(doc.documentId)
+        .then((res) => {
+          const blob = new Blob([res]);
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = doc.fileName;
+          link.click();
 
-        // Cleanup
-        URL.revokeObjectURL(url);
-      });
+          // Cleanup
+          URL.revokeObjectURL(url);
+        })
+        .catch((err) => {
+          console.log("err=>", err);
+        });
     }
   };
 
@@ -420,11 +433,11 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
     navigate(`/main-flow/plan/${plan?.id}/prescriptions`);
   };
 
-  const isCompleted = plan?.completed === 1;
-  const isEditor = account.role.name !== UserRoles.EDITOR;
+  const isPlanCompleted = plan?.completed === 1;
+  const isEditor = account.role.name === UserRoles.EDITOR;
   const isPrintAllowed = stages[plan?.currentStage]?.printPermission;
 
-  const isUploaded = (index) => {
+  const isNotUploaded = (index) => {
     return getFileName(index)?.length === 0;
   };
 
@@ -440,6 +453,14 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
     return getPrintStatus(index)?.length !== 0;
   };
 
+  const isPrinted = (index) => {
+    return (
+      plan?.currentStage === index &&
+      (getPrintStatus(index).includes(PrintRequestStatus.DONE) ||
+        !isPrintAllowed)
+    );
+  };
+
   return (
     <Box sx={{ marginX: "10%" }}>
       <Timeline {...timelineProps} sx={{ padding: 0, margin: "auto" }}>
@@ -453,13 +474,12 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
                 sx={{ width: "40px" }}
                 style={{ width: "40px" }}
                 className="w-20"
-                width
               >
-                <div className="ring-container justify-center">
+                <Box className="ring-container justify-center">
                   {plan?.currentStage === index ? (
                     <>
-                      <div className="ringing" />
-                      <div className="circle" />
+                      <Box className="ringing" />
+                      <Box className="circle" />
                     </>
                   ) : (
                     <TimelineDot
@@ -471,7 +491,7 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
                       }}
                     />
                   )}
-                </div>
+                </Box>
                 <TimelineConnector
                   sx={{ display: index + 1 === data?.length ? "none" : "" }}
                 />
@@ -490,10 +510,10 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
                         variant="contained"
                         color="primary"
                         disabled={Boolean(
-                          isCompleted ||
+                          isPlanCompleted ||
                             isCurrentStage(index) ||
-                            !isUploaded(index) ||
-                            isEditor,
+                            !isNotUploaded(index) ||
+                            !isEditor,
                         )}
                         sx={{
                           paddingTop: 0,
@@ -525,7 +545,7 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
                             color="success"
                             onClick={() => handleOpenConfirmModal(index)}
                             disabled={Boolean(
-                              isUploaded(index) ||
+                              isNotUploaded(index) ||
                                 isCurrentStage(index) ||
                                 isPrintRequested(index) ||
                                 !isPrintAllowed,
@@ -554,7 +574,7 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
                             color="secondary"
                             onClick={() => handleCompareDocument(datum, index)}
                             disabled={Boolean(
-                              isUploaded(index) ||
+                              isNotUploaded(index) ||
                                 isCompared(index) ||
                                 isFirstMode(index),
                             )}
@@ -599,7 +619,7 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
                             variant="contained"
                             color="info"
                             onClick={() => goToCollaboration(index)}
-                            disabled={Boolean(isUploaded(index))}
+                            disabled={Boolean(isNotUploaded(index))}
                             sx={{
                               paddingTop: 0,
                               paddingBottom: 0,
@@ -632,8 +652,8 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
                                     handleApproveOrReject(datum, index)
                                   }
                                   disabled={Boolean(
-                                    isUploaded(index) ||
-                                      isCompleted ||
+                                    isNotUploaded(index) ||
+                                      isPlanCompleted ||
                                       !isCompared(index) ||
                                       !isPrinted(index),
                                   )}
@@ -684,6 +704,7 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
                         variant="contained"
                         color="primary"
                         onClick={handleViewPrescriptions}
+                        disabled={!isAbleToSeePrescriptions}
                       >
                         <Tooltip
                           title="View prescriptions"

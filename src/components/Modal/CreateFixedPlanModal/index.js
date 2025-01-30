@@ -5,24 +5,25 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers";
-import {
-  Box,
-  Button,
-  Chip,
-  FormControl,
-  FormHelperText,
-  InputLabel,
-  MenuItem,
-  Modal,
-  Select,
-  TextField,
-} from "@mui/material";
+import { Box, InputLabel, MenuItem, Modal, Select } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import Repeat from "../../Repeat";
 import StageTable from "../../Table/StageTable";
 import { MenuProps } from "../../../constants";
-import { CloseButtonBox, FormContainer, FormBox } from "../style";
+import {
+  CloseButtonBox,
+  FormContainer,
+  FormBox,
+  MenuItemContainer,
+  CustomFormControl,
+  SubmitButton,
+} from "../style";
+import {
+  FormTextField,
+  FormErrorText,
+  ArchivedIcon,
+  ArchivedChip,
+} from "../../../pages/style";
 
 const validationSchema = Yup.object().shape({
   title: Yup.string().required("modal_title_required"),
@@ -38,7 +39,6 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
   const [sectionId, setSectionId] = useState(0);
   const [planTypeId, setPlanTypeId] = useState(0);
 
-  // Redux selectors
   const sections = useSelector((state) => state.sectionReducer.sections);
   const subSections = useSelector(
     (state) => state.subSectionReducer.subSections,
@@ -48,9 +48,7 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
     (state) => state.subPlanTypeReducer.subPlanTypes,
   );
   const paperSizes = useSelector((state) => state.paperSizeReducer.paperSizes);
-
   const getLocaleString = (key) => t(key);
-
   const handleSubmit = async (data) => {
     const payload = {
       ...data,
@@ -60,19 +58,12 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
       subPlanTypeId: data.subPlanTypeId || null,
       paperSizeId: data.paperSizeId,
     };
-    if (!editing) {
-      create(payload);
+    if (editing) {
+      update(id, payload);
     } else {
-      update(id, payload, form);
+      create(payload);
     }
   };
-
-  useEffect(() => {
-    if (data) {
-      setSectionId(data.sectionId);
-      setPlanTypeId(data.planTypeId);
-    }
-  }, [data]);
 
   const form = useFormik({
     validationSchema,
@@ -80,7 +71,7 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
       title: "",
       sectionId: "",
       subsectionId: "",
-      stages: "[]",
+      stages: data?.stages || "[]",
       isRepeatable: "{}",
       planTypeId: "",
       subPlanTypeId: "",
@@ -90,7 +81,7 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
   });
 
   useEffect(() => {
-    if (data) {
+    if (data && open) {
       form.setValues({
         title: data.title ?? "",
         sectionId: data.sectionId ?? "",
@@ -103,9 +94,30 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
       });
       setSectionId(data.sectionId);
       setPlanTypeId(data.planTypeId);
+    } else {
+      form.resetForm();
+      setSectionId("");
+      setPlanTypeId("");
     }
-  }, [data]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, open]);
 
+  const isChanged = useMemo(
+    () =>
+      data && (
+        form.values.title !== data?.title ||
+        form.values.planTypeId !== data?.planTypeId ||
+        form.values.subPlanTypeId !== data?.subPlanTypeId ||
+        form.values.subsectionId !== data?.subsectionId ||
+        form.values.sectionId !== data?.sectionId ||
+        form.values.paperSizeId !== data?.paperSizeId ||
+        form.values.stages !== form.initialValues.stages ||
+        form.values.isRepeatable !== data?.isRepeatable
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form.values, data]
+  );
+  
   const availableSubSections = useMemo(() => {
     return sectionId
       ? subSections.filter((item) => item.sectionId === sectionId)
@@ -119,17 +131,31 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
   }, [planTypeId, subPlanTypes]);
 
   const handleChangeSectionId = (e) => {
-    const value = e.target.value;
-    form.setFieldValue("sectionId", value);
+    form.setFieldValue("sectionId", e.target.value);
     form.setFieldValue("subsectionId", "");
-    setSectionId(value);
+    setSectionId(e.target.value);
+  };
+
+  const handleChangeSubsectionId = (e) => {
+    form.setFieldValue("subsectionId", e.target.value);
   };
 
   const handleChangePlanTypeId = (e) => {
-    const value = e.target.value;
-    form.setFieldValue("planTypeId", value);
+    form.setFieldValue("planTypeId", e.target.value);
     form.setFieldValue("subPlanTypeId", "");
-    setPlanTypeId(value);
+    setPlanTypeId(e.target.value);
+  };
+
+  const handleChangeSubPlanTypeId = (e) => {
+    form.setFieldValue("subPlanTypeId", e.target.value);
+  };
+
+  const handleChangePaperSizeId = (e) => {
+    form.setFieldValue("paperSizeId", e.target.value);
+  };
+
+  const handleStagesChange = (stages) => {
+    form.setFieldValue("stages", stages);
   };
 
   return (
@@ -144,7 +170,7 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
           <FormContainer sx={{ width: "75% !important" }}>
             <form onSubmit={form.handleSubmit}>
               <FormBox>
-                <TextField
+                <FormTextField
                   fullWidth
                   label={getLocaleString("modal_title_label")}
                   placeholder={getLocaleString("modal_title_placeholder")}
@@ -155,12 +181,8 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
                       : ""
                   }
                   error={Boolean(form.touched.title && form.errors.title)}
-                  sx={{ mb: 3 }}
                 />
-                <FormControl
-                  fullWidth
-                  sx={{ marginBottom: "1rem", maxHeight: "100px" }}
-                >
+                <CustomFormControl fullWidth>
                   <InputLabel id="section-label">
                     {getLocaleString("common_table_section")}
                   </InputLabel>
@@ -173,36 +195,30 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
                     error={Boolean(
                       form.touched.sectionId && form.errors.sectionId,
                     )}
-                    onChange={handleChangeSectionId}
+                    onChange={(e) => handleChangeSectionId(e)}
                   >
-                    <MenuItem sx={{ height: "36px" }} key="-1" value="" />
-                    {sections.map((section) => (
+                    <MenuItemContainer key="-1" value="" />
+                    {sections?.map((section) => (
                       <MenuItem key={section.id} value={section.id}>
                         {section.name}
                         {section.archived && (
-                          <Chip
+                          <ArchivedChip
                             label={getLocaleString("common_table_archived")}
-                            icon={
-                              <WarningAmberIcon sx={{ fontSize: "16px" }} />
-                            }
+                            icon={<ArchivedIcon />}
                             color="warning"
-                            sx={{ marginLeft: "0.5rem" }}
                           />
                         )}
                       </MenuItem>
                     ))}
                   </Select>
                   {form.touched.sectionId && form.errors.sectionId && (
-                    <FormHelperText sx={{ color: "red" }}>
+                    <FormErrorText>
                       {getLocaleString("modal_section_required")}
-                    </FormHelperText>
+                    </FormErrorText>
                   )}
-                </FormControl>
+                </CustomFormControl>
 
-                <FormControl
-                  fullWidth
-                  sx={{ marginBottom: "1rem", maxHeight: "100px" }}
-                >
+                <CustomFormControl fullWidth>
                   <InputLabel id="sub-section-label">
                     {getLocaleString("common_table_subsection")}
                   </InputLabel>
@@ -215,35 +231,30 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
                     error={Boolean(
                       form.touched.subsectionId && form.errors.subsectionId,
                     )}
+                    onChange={(e) => handleChangeSubsectionId(e)}
                   >
-                    <MenuItem sx={{ height: "36px" }} key="-1" value="" />
-                    {availableSubSections.map((subSection) => (
+                    <MenuItemContainer key="-1" value="" />
+                    {availableSubSections?.map((subSection) => (
                       <MenuItem key={subSection.id} value={subSection.id}>
                         {subSection.name}
                         {subSection.archived && (
-                          <Chip
+                          <ArchivedChip
                             label={getLocaleString("common_table_archived")}
-                            icon={
-                              <WarningAmberIcon sx={{ fontSize: "16px" }} />
-                            }
+                            icon={<ArchivedIcon />}
                             color="warning"
-                            sx={{ marginLeft: "0.5rem" }}
                           />
                         )}
                       </MenuItem>
                     ))}
                   </Select>
                   {form.touched.subsectionId && form.errors.subsectionId && (
-                    <FormHelperText sx={{ color: "red" }}>
+                    <FormErrorText>
                       {getLocaleString("modal_sub_section_required")}
-                    </FormHelperText>
+                    </FormErrorText>
                   )}
-                </FormControl>
+                </CustomFormControl>
 
-                <FormControl
-                  fullWidth
-                  sx={{ marginBottom: "1rem", maxHeight: "100px" }}
-                >
+                <CustomFormControl fullWidth>
                   <InputLabel id="type-label">
                     {getLocaleString("common_table_type")}
                   </InputLabel>
@@ -256,36 +267,30 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
                     error={Boolean(
                       form.touched.planTypeId && form.errors.planTypeId,
                     )}
-                    onChange={handleChangePlanTypeId}
+                    onChange={(e) => handleChangePlanTypeId(e)}
                   >
-                    <MenuItem sx={{ height: "36px" }} key="-1" value="" />
-                    {planTypes.map((type) => (
+                    <MenuItemContainer key="-1" value="" />
+                    {planTypes?.map((type) => (
                       <MenuItem key={type.id} value={type.id}>
                         {type.name}
                         {type.archived && (
-                          <Chip
+                          <ArchivedChip
                             label={getLocaleString("common_table_archived")}
-                            icon={
-                              <WarningAmberIcon sx={{ fontSize: "16px" }} />
-                            }
+                            icon={<ArchivedIcon />}
                             color="warning"
-                            sx={{ marginLeft: "0.5rem" }}
                           />
                         )}
                       </MenuItem>
                     ))}
                   </Select>
                   {form.touched.planTypeId && form.errors.planTypeId && (
-                    <FormHelperText sx={{ color: "red" }}>
+                    <FormErrorText>
                       {getLocaleString("modal_plan_type_required")}
-                    </FormHelperText>
+                    </FormErrorText>
                   )}
-                </FormControl>
+                </CustomFormControl>
 
-                <FormControl
-                  fullWidth
-                  sx={{ marginBottom: "1rem", maxHeight: "100px" }}
-                >
+                <CustomFormControl fullWidth>
                   <InputLabel id="sub-plan-type-label">
                     {getLocaleString("common_table_subplan_type")}
                   </InputLabel>
@@ -298,35 +303,30 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
                     error={Boolean(
                       form.touched.subPlanTypeId && form.errors.subPlanTypeId,
                     )}
+                    onChange={(e) => handleChangeSubPlanTypeId(e)}
                   >
-                    <MenuItem sx={{ height: "36px" }} key="-1" value="" />
+                    <MenuItemContainer key="-1" value="" />
                     {availableSubPlanTypes.map((type) => (
                       <MenuItem key={type.id} value={type.id}>
                         {type.name}
                         {type.archived && (
-                          <Chip
+                          <ArchivedChip
                             label={getLocaleString("common_table_archived")}
-                            icon={
-                              <WarningAmberIcon sx={{ fontSize: "16px" }} />
-                            }
+                            icon={<ArchivedIcon />}
                             color="warning"
-                            sx={{ marginLeft: "0.5rem" }}
                           />
                         )}
                       </MenuItem>
                     ))}
                   </Select>
                   {form.touched.subPlanTypeId && form.errors.subPlanTypeId && (
-                    <FormHelperText sx={{ color: "red" }}>
+                    <FormErrorText>
                       {getLocaleString("modal_sub_plan_type_required")}
-                    </FormHelperText>
+                    </FormErrorText>
                   )}
-                </FormControl>
+                </CustomFormControl>
 
-                <FormControl
-                  fullWidth
-                  sx={{ marginBottom: "1rem", maxHeight: "100px" }}
-                >
+                <CustomFormControl fullWidth>
                   <InputLabel>
                     {getLocaleString("common_table_paper_size")}
                   </InputLabel>
@@ -337,20 +337,21 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
                     error={Boolean(
                       form.touched.paperSizeId && form.errors.paperSizeId,
                     )}
+                    onChange={(e) => handleChangePaperSizeId(e)}
                   >
-                    <MenuItem sx={{ height: "36px" }} key="-1" value="" />
-                    {paperSizes.map((size) => (
-                      <MenuItem key={size.id} value={size.id}>
-                        {size.name}
+                    <MenuItemContainer key="-1" value="" />
+                    {paperSizes.map((type) => (
+                      <MenuItem key={type.id} value={type.id}>
+                        {type.name}
                       </MenuItem>
                     ))}
                   </Select>
                   {form.touched.paperSizeId && form.errors.paperSizeId && (
-                    <FormHelperText sx={{ color: "red" }}>
+                    <FormErrorText>
                       {getLocaleString("modal_paper_size_required")}
-                    </FormHelperText>
+                    </FormErrorText>
                   )}
-                </FormControl>
+                </CustomFormControl>
 
                 <Repeat
                   data={data?.isRepeatable}
@@ -359,21 +360,14 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
                 <StageTable
                   data={data?.stages}
                   planStart={new Date().toString()}
-                  onChange={(stages) => form.setFieldValue("stages", stages)}
-                  showRanges={false}
-                  disable={false}
+                  onChange={handleStagesChange}
                 />
               </FormBox>
-              <Button
-                fullWidth
-                type="submit"
-                variant="contained"
-                sx={{ textTransform: "capitalize", marginTop: "1rem" }}
-              >
+              <SubmitButton fullWidth type="submit" variant="contained" disabled={data && !isChanged}>
                 {editing
                   ? getLocaleString("common_save")
                   : getLocaleString("common_create")}
-              </Button>
+              </SubmitButton>
             </form>
             <CloseButtonBox>
               <CloseIcon onClick={close} />

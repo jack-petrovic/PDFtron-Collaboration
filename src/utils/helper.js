@@ -1,11 +1,11 @@
 export const convertToXfdf = (changedAnnotation, action) => {
   let xfdfString = `<?xml version="1.0" encoding="UTF-8" ?><xfdf xmlns="http://ns.adobe.com/xfdf/" xml:space="preserve"><fields />`;
   if (action === "add") {
-    xfdfString += `<add>${changedAnnotation}</add><modify /><delete />`;
+    xfdfString += `<add>${changedAnnotation}</add>`;
   } else if (action === "modify") {
-    xfdfString += `<add /><modify>${changedAnnotation}</modify><delete />`;
+    xfdfString += `<modify>${changedAnnotation}</modify>`;
   } else if (action === "delete") {
-    xfdfString += `<add /><modify /><delete>${changedAnnotation}</delete>`;
+    xfdfString += `<delete>${changedAnnotation}</delete>`;
   }
   xfdfString += `</xfdf>`;
   return xfdfString;
@@ -26,7 +26,10 @@ export const sendAnnotationChange = (
       JSON.stringify({
         event: "annotation",
         documentId,
-        annotationId: annotation.getAttribute("name"),
+        annotationId:
+          action === "delete"
+            ? annotation.textContent
+            : annotation.getAttribute("name"),
         xfdfString: convertToXfdf(annotationString, action),
         userId,
       }),

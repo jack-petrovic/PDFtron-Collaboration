@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { setNotifications, setSearch } from "../../../redux/actions";
@@ -14,6 +14,7 @@ import {
   Menu,
   Badge,
   Button,
+  Avatar,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AccountCircle from "@mui/icons-material/AccountCircle";
@@ -53,7 +54,7 @@ const languages = {
   },
 };
 
-export default function Header() {
+const Header = () => {
   const dispatch = useDispatch();
   const { account } = useAuthState();
   const logout = useLogout();
@@ -70,7 +71,6 @@ export default function Header() {
   const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
   const isLanguageMenuOpen = Boolean(languageMenuAnchorEl);
   const isNotificationMenuOpen = Boolean(notificationAnchorEl);
-  const [searchParams, setSearchParams] = useSearchParams();
   const notifications = useSelector(
     (state) => state.notificationReducer.notifications,
   );
@@ -111,7 +111,6 @@ export default function Header() {
   };
 
   const handleChangeSearch = (e) => {
-    setSearchParams({ key: e.target.value });
     dispatch(setSearch(e.target.value, "contains"));
     saveSearchKeyHandler(e.target.value);
   };
@@ -136,18 +135,13 @@ export default function Header() {
   useEffect(() => {
     getNotifications({
       pageSize: 10,
-      page: 1,
+      page: 0,
     })
       .then((res) => {
         dispatch(setNotifications(res.rows));
       })
       .catch((err) => {
         console.log("err=>", err);
-        ToastService.error(
-          getLocaleString(
-            err.response?.data?.message || "common_network_error",
-          ),
-        );
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -159,14 +153,9 @@ export default function Header() {
       })
       .catch((err) => {
         console.log("err=>", err);
-        ToastService.error(
-          getLocaleString(
-            err.response?.data?.message || "common_network_error",
-          ),
-        );
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notifications]);
+  }, []);
 
   useEffect(() => {
     const search = localStorage.getItem("searchKey");
@@ -176,14 +165,6 @@ export default function Header() {
   }, []);
 
   const handleDebounceChangeSearch = debounce(handleChangeSearch, 700);
-
-  useEffect(() => {
-    const key = searchParams.get("key");
-    if (key) {
-      dispatch(setSearch(key, "contains"));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const gotoProfile = () => {
     navigate("/profile");
@@ -212,42 +193,28 @@ export default function Header() {
   };
 
   const handleMarkAllAsRead = async () => {
-    try {
-      await markAllAsRead().then((res) => {
-        ToastService.success(getLocaleString(res.message));
-      });
-      await getNotifications({
-        pageSize: 10,
-        page: 1,
-      }).then((res) => {
-        dispatch(setNotifications(res.rows));
-      });
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
+    await markAllAsRead().then((res) => {
+      ToastService.success(getLocaleString(res.message));
+    });
+    await getNotifications({
+      pageSize: 10,
+      page: 0,
+    }).then((res) => {
+      dispatch(setNotifications(res.rows));
+    });
     handleNotificationMenuClose();
   };
 
   const handleClearAll = async () => {
-    try {
-      await clearAllNotifications().then((res) => {
-        ToastService.success(getLocaleString(res.message));
-      });
-      await getNotifications({
-        pageSize: 10,
-        page: 1,
-      }).then((res) => {
-        dispatch(setNotifications(res.rows));
-      });
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
+    await clearAllNotifications().then((res) => {
+      ToastService.success(getLocaleString(res.message));
+    });
+    await getNotifications({
+      pageSize: 10,
+      page: 0,
+    }).then((res) => {
+      dispatch(setNotifications(res.rows));
+    });
     handleNotificationMenuClose();
   };
 
@@ -265,11 +232,6 @@ export default function Header() {
       })
       .catch((err) => {
         console.log("err=>", err);
-        ToastService.error(
-          getLocaleString(
-            err.response?.data?.message || "common_network_error",
-          ),
-        );
       });
     handleClose();
   };
@@ -277,6 +239,10 @@ export default function Header() {
   const handleLogout = () => {
     navigate("/");
     logout();
+  };
+
+  const handleGoToHome = () => {
+    navigate("/");
   };
 
   const menuId = "primary-search-account-menu";
@@ -403,16 +369,16 @@ export default function Header() {
       }}
       open={isNotificationMenuOpen}
       onClose={handleNotificationMenuClose}
-      sx={{ display: "block" }}
+      sx={{ display: "block", marginTop: "20px" }}
     >
       {notifications.length ? (
         <React.Fragment>
-          <div className="flex justify-between px-2">
+          <Box className="flex justify-between px-2">
             <Button onClick={handleClearAll}>{getLocaleString("clear")}</Button>
             <Button onClick={handleMarkAllAsRead}>
               {getLocaleString("mark_all_as_read")}
             </Button>
-          </div>
+          </Box>
           {notifications.map((item, index) => (
             <MenuItem
               key={`menu-${index}`}
@@ -428,32 +394,32 @@ export default function Header() {
                     : "1px solid lightgray",
               }}
             >
-              <div className="grid w-full justify-items-stretch">
-                <div className="mt-5 justify-self-start">
+              <Box className="grid w-full justify-items-stretch">
+                <Box className="mt-5 justify-self-start">
                   <span
                     id="notification_content"
                     style={{ fontWeight: item.unread ? "bolder" : "lighter" }}
                     title={getLocaleString(JSON.parse(item.content)?.key)}
                   >
                     {t(
-                        JSON.parse(item?.content).key,
-                        JSON.parse(item?.content).data,
+                      JSON.parse(item?.content).key,
+                      JSON.parse(item?.content).data,
                     )}
                   </span>
-                </div>
-                <div className="justify-self-end">
+                </Box>
+                <Box className="justify-self-end">
                   <span className="text-red-600 text-xs">
                     {moment(item.createdAt).format("YYYY-MM-DD HH:mm:ss")}
                   </span>
-                </div>
-              </div>
+                </Box>
+              </Box>
             </MenuItem>
           ))}
-          <div className="grid justify-items-stretch px-2">
+          <Box className="grid justify-items-stretch px-2">
             <Button onClick={handleViewAll} className="justify-self-end">
               {getLocaleString("view_all")}
             </Button>
-          </div>
+          </Box>
         </React.Fragment>
       ) : (
         <MenuItem
@@ -465,13 +431,13 @@ export default function Header() {
           }}
           key={notifications.index}
         >
-          <div className="grid w-full justify-items-stretch">
-            <div className="justify-self-start">
+          <Box className="grid w-full justify-items-stretch">
+            <Box className="justify-self-start">
               <span id="notification_content">
                 {getLocaleString("common_table_no_message")}
               </span>
-            </div>
-          </div>
+            </Box>
+          </Box>
         </MenuItem>
       )}
     </Menu>
@@ -485,9 +451,9 @@ export default function Header() {
           <Typography
             variant="h6"
             noWrap
-            component="div"
             ml={2}
-            sx={{ display: { xs: "none", sm: "block" } }}
+            onClick={handleGoToHome}
+            className="hidden sm:block cursor-pointer"
           >
             {getLocaleString("header_title")}
           </Typography>
@@ -527,6 +493,7 @@ export default function Header() {
                 justifyContent: "center",
                 width: "1.5rem",
                 height: "1.5rem",
+                marginRight: "1rem",
               }}
             >
               <img
@@ -535,29 +502,26 @@ export default function Header() {
                 alt="language"
               />
             </Box>
-            <Typography sx={{ marginLeft: "0.5rem" }}>
-              {languages[i18n.language]?.title}
-            </Typography>
           </AccountMenu>
           <AccountMenu onClick={handleProfileMenuOpen}>
-            <IconButton
-              size="large"
-              edge="end"
+            <Avatar
+              alt={account.name}
+              src={process.env.REACT_APP_API_SERVER.replace(
+                "api",
+                account.avatarUrl,
+              )}
+              className="mr-2"
               aria-label="account of current user"
               aria-controls={menuId}
               aria-haspopup="true"
               color="inherit"
-              sx={{ display: { xs: "none", md: "flex" } }}
-            >
-              <AccountCircle />
-            </IconButton>
+            />
             <Typography
               sx={{
                 display: { xs: "none", md: "flex" },
-                marginLeft: "0.5rem",
               }}
             >
-              <strong>{getLocaleString(account.name)}</strong>
+              <strong>{account.name}</strong>
             </Typography>
           </AccountMenu>
           <Box sx={{ display: { xs: "flex", md: "none" } }}>
@@ -587,4 +551,6 @@ export default function Header() {
       )}
     </Box>
   );
-}
+};
+
+export default Header;

@@ -1,9 +1,16 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { Box, InputLabel, MenuItem, Select } from "@mui/material";
+import { useSelector } from "react-redux";
 
-export const Toolbar = ({ onZoomChange, zoom }) => {
+export const Toolbar = ({ onZoomChange, zoom, onFilterChange }) => {
   const { t } = useTranslation();
   const getLocaleString = (key) => t(key);
+  const sections = useSelector((state) => state.sectionReducer.sections);
+
+  const handleChangeFilter = (e) => {
+    onFilterChange(e.target.value);
+  };
 
   const handleZoomChange = (e) => {
     if (onZoomChange) {
@@ -37,12 +44,36 @@ export const Toolbar = ({ onZoomChange, zoom }) => {
         </label>
       );
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoom, zoomOptions]);
 
   return (
-    <div className="tool-bar">
-      <b>{getLocaleString("gantt_chart_toolbar_title")}: </b>
-      {zoomRadios}
-    </div>
+    <Box className="sm:flex justify-between items-end h-full">
+      <Box className="flex justify-between items-center w-44 pt-2">
+        <InputLabel id="section-label" className="filter_label">
+          <b>{getLocaleString("menu_filter")}: </b>
+        </InputLabel>
+        <Select
+          labelId="section-label"
+          id="filter-select"
+          defaultValue="All"
+          onChange={handleChangeFilter}
+          className="h-7 w-28"
+        >
+          <MenuItem key="all-section" value="All" className="h-8">
+            {getLocaleString("common_table_all_sections")}
+          </MenuItem>
+          {sections.map((section) => (
+            <MenuItem key={section.id} value={section.name}>
+              {section.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </Box>
+      <Box className="pt-2">
+        <b>{getLocaleString("gantt_chart_toolbar_title")}: </b>
+        {zoomRadios}
+      </Box>
+    </Box>
   );
 };

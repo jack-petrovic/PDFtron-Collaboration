@@ -2,79 +2,71 @@ import React, { useRef, useEffect } from "react";
 import { gantt } from "dhtmlx-gantt";
 import "dhtmlx-gantt/codebase/dhtmlxgantt.css";
 import "./GanttChart.css";
+import { Box } from "@mui/material";
 
 export const GanttChart = (props) => {
-  const dataSource = props.dataSource;
+  const { dataSource, onDataUpdated, zoom, onTaskClick, onCreateTask } = props;
   const ganttContainerRef = useRef(null);
-  const onDataUpdated = props.onDataUpdated;
-  const zoom = props.zoom;
   let dataProcessor = null;
 
   const initGanttDataProcessor = () => {
-    /**
-     * type: "task"|"link"
-     * action: "create"|"update"|"delete"
-     * item: data object object
-    //  */
     dataProcessor = gantt.createDataProcessor((type, action, item, id) => {
       return new Promise((resolve) => {
         if (onDataUpdated) {
           onDataUpdated(type, action, item, id);
         }
-        return resolve();
+        resolve();
       });
     });
   };
 
-  const initZoom = () => {
-    gantt.ext.zoom.init({
-      levels: [
-        {
-          name: "Hours",
-          scale_height: 60,
-          min_column_width: 30,
-          scales: [
-            { unit: "day", step: 1, format: "%d %M" },
-            { unit: "hour", step: 1, format: "%H" },
-          ],
-        },
-        {
-          name: "Days",
-          scale_height: 60,
-          min_column_width: 70,
-          scales: [
-            { unit: "week", step: 1, format: "Week #%W" },
-            { unit: "day", step: 1, format: "%d %M" },
-          ],
-        },
-        {
-          name: "Months",
-          scale_height: 60,
-          min_column_width: 70,
-          scales: [
-            { unit: "month", step: 1, format: "%F" },
-            { unit: "week", step: 1, format: "#%W" },
-          ],
-        },
-      ],
-    });
+  const weekScaleTemplate = (date) => {
+    const dateToStr = gantt.date.date_to_str("%d %M");
+    const endDate = gantt.date.add(gantt.date.add(date, 1, "week"), -1, "day");
+    return dateToStr(date) + " - " + dateToStr(endDate);
   };
 
-  const setZoom = (value) => {
-    if (!gantt.ext.zoom.getLevels()) {
-      initZoom();
+  const setScaleConfig = (level) => {
+    // eslint-disable-next-line default-case
+    switch (level) {
+      case "hour":
+        gantt.config.scales = [
+          { unit: "day", step: 1, format: "%d %M" },
+          { unit: "hour", step: 1, format: "%H" },
+        ];
+        gantt.config.scale_height = 60;
+        gantt.config.min_column_width = 30;
+        break;
+      case "day":
+        gantt.config.scales = [
+          { unit: "week", step: 1, format: weekScaleTemplate },
+          { unit: "day", step: 1, format: "%d %M" },
+        ];
+        gantt.config.scale_height = 60;
+        gantt.config.min_column_width = 70;
+        break;
+      case "month":
+        gantt.config.scales = [
+          { unit: "month", step: 1, format: "%F" },
+          { unit: "week", step: 1, format: weekScaleTemplate },
+        ];
+        gantt.config.scale_height = 60;
+        gantt.config.min_column_width = 70;
     }
-    gantt.ext.zoom.setLevel(value);
   };
 
-  setZoom(zoom);
+  useEffect(() => {
+    setScaleConfig(zoom);
+    gantt.render();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom]);
 
   useEffect(() => {
     gantt.config.date_format = "%Y-%m-%d %H:%i";
     gantt.init(ganttContainerRef.current);
     initGanttDataProcessor();
-    gantt.parse(dataSource);
     gantt.config.drag_resize = false;
+    gantt.config.drag_links = false;
     gantt.config.drag_move = true;
 
     return () => {
@@ -83,15 +75,21 @@ export const GanttChart = (props) => {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    gantt.clearAll();
+    gantt.parse(dataSource);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataSource]);
 
   useEffect(() => {
     gantt.attachEvent("onTaskClick", (id) => {
-      props.onTaskClick(id);
+      onTaskClick(id);
     });
 
     gantt.attachEvent("onTaskCreated", () => {
-      props.onCreateTask();
+      onCreateTask();
     });
 
     return () => {
@@ -102,6 +100,6 @@ export const GanttChart = (props) => {
   }, []);
 
   return (
-    <div ref={ganttContainerRef} style={{ width: "100%", height: "100%" }} />
+    <Box ref={ganttContainerRef} style={{ width: "100%", height: "100%" }} />
   );
 };

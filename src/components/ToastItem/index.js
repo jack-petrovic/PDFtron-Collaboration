@@ -46,7 +46,7 @@ export const ToastItem = ({ index, item }) => {
   return (
     <StyledSnackbar
       open={open.open}
-      sx={{ transform: `translateY(${index * 50}px)` }}
+      sx={{ transform: `translateY(${(index + 1) * 50}px)` }}
       anchorOrigin={{
         horizontal: item.xPosition || "right",
         vertical: item?.yPosition || "top",

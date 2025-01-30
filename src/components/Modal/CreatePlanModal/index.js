@@ -7,23 +7,31 @@ import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import {
   Box,
-  Button,
-  Chip,
   FormControl,
-  FormHelperText,
   Grid,
   InputLabel,
   MenuItem,
   Modal,
   Select,
-  TextField,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import moment from "moment";
 import StageTable from "../../Table/StageTable";
 import { MenuProps } from "../../../constants";
-import { CloseButtonBox, FormContainer, FormBox } from "../style";
+import {
+  CloseButtonBox,
+  FormContainer,
+  FormBox,
+  MenuItemContainer,
+  CustomFormControl,
+  SubmitButton,
+} from "../style";
+import {
+  FormTextField,
+  FormErrorText,
+  ArchivedIcon,
+  ArchivedChip,
+} from "../../../pages/style";
 
 const validationSchema = Yup.object().shape({
   title: Yup.string().required("modal_title_required"),
@@ -32,7 +40,7 @@ const validationSchema = Yup.object().shape({
   paperSizeId: Yup.string().required("modal_paper_size_required"),
   startDate: Yup.date()
     .nullable()
-    .test("required", "modal_start_date_required", function (value) {
+    .test("required", "modal_start_date_required", (value) => {
       return !!value;
     })
     .test("minDate", "modal_start_date_validation", function (value) {
@@ -44,7 +52,7 @@ const validationSchema = Yup.object().shape({
     }),
   endDate: Yup.date()
     .nullable()
-    .test("required", "modal_end_date_required", function (value) {
+    .test("required", "modal_end_date_required", (value) => {
       return !!value;
     })
     .test("minDate", "modal_end_date_validation", function (value) {
@@ -60,7 +68,7 @@ const validationSchema = Yup.object().shape({
     }),
   publishDate: Yup.date()
     .nullable()
-    .test("required", "modal_publish_date_required", function (value) {
+    .test("required", "modal_publish_date_required", (value) => {
       return !!value;
     })
     .test("minDate", "modal_publish_date_validation", function (value) {
@@ -113,13 +121,30 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
       startDate: new Date().toString(),
       endDate: new Date().toString(),
       publishDate: new Date().toString(),
-      stages: "[]",
+      stages: data?.stages || "",
       planTypeId: "",
       subPlanTypeId: "",
       paperSizeId: "",
     },
     onSubmit: handleSubmit,
   });
+
+  const isChanged = useMemo(
+    () =>
+      data && (
+        form.values.title !== data?.title ||
+        form.values.planTypeId !== data?.planTypeId ||
+        form.values.subPlanTypeId !== data?.subPlanTypeId ||
+        form.values.subsectionId !== data?.subsectionId ||
+        form.values.sectionId !== data?.sectionId ||
+        form.values.paperSizeId !== data?.paperSizeId ||
+        form.values.stages !== form.initialValues.stages ||
+        new Date(form.values.startDate).getTime() !== new Date(data?.startDate).getTime() ||
+        new Date(form.values.endDate).getTime() !== new Date(data?.endDate).getTime() ||
+        new Date(form.values.publishDate).getTime() !== new Date(data?.publishDate).getTime()
+      ), // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form.values, data]
+  );
 
   const availableSubSections = useMemo(() => {
     return !sectionId
@@ -160,12 +185,6 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
   const handleStagesChange = (e, end) => {
     if (end) {
       form.setFieldValue("endDate", end);
-      if (new Date(end) >= new Date(form.values.publishDate)) {
-        form.setFieldValue(
-          "publishDate",
-          moment(end).add(1, "days").toString(),
-        );
-      }
     }
     form.setFieldValue("stages", e);
   };
@@ -201,7 +220,7 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
           <FormContainer sx={{ width: "75% !important" }}>
             <form onSubmit={form.handleSubmit}>
               <FormBox>
-                <TextField
+                <FormTextField
                   fullWidth
                   label={getLocaleString("modal_title_label")}
                   placeholder={getLocaleString("modal_title_placeholder")}
@@ -216,15 +235,8 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                       ? form.errors.title
                       : "",
                   )}
-                  sx={{ mb: 3 }}
                 />
-                <FormControl
-                  fullWidth
-                  sx={{
-                    marginBottom: "1rem",
-                    maxHeight: "100px",
-                  }}
-                >
+                <CustomFormControl fullWidth>
                   <InputLabel id="type-label">
                     {getLocaleString("common_table_type")}
                   </InputLabel>
@@ -241,18 +253,15 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                     )}
                     onChange={(e) => handleChangePlanTypeId(e)}
                   >
-                    <MenuItem sx={{ height: "36px" }} key="-1" value="" />
+                    <MenuItemContainer key="-1" value="" />
                     {planTypes?.map((type) => (
                       <MenuItem key={type.id} value={type.id}>
                         {type.name}
                         {type.archived && (
-                          <Chip
+                          <ArchivedChip
                             label={getLocaleString("common_table_archived")}
-                            icon={
-                              <WarningAmberIcon sx={{ fontSize: "16px" }} />
-                            }
+                            icon={<ArchivedIcon />}
                             color="warning"
-                            sx={{ marginLeft: "0.5rem" }}
                           />
                         )}
                       </MenuItem>
@@ -263,18 +272,12 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                       ? form.errors.planTypeId
                       : "",
                   ) && (
-                    <FormHelperText sx={{ color: "red" }}>
+                    <FormErrorText>
                       {getLocaleString("modal_plan_type_required")}
-                    </FormHelperText>
+                    </FormErrorText>
                   )}
-                </FormControl>
-                <FormControl
-                  fullWidth
-                  sx={{
-                    marginBottom: "1rem",
-                    maxHeight: "100px",
-                  }}
-                >
+                </CustomFormControl>
+                <CustomFormControl fullWidth>
                   <InputLabel id="type-label">
                     {getLocaleString("common_table_subplan_type")}
                   </InputLabel>
@@ -291,18 +294,15 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                     )}
                     onChange={(e) => handleChangeSubPlanTypeId(e)}
                   >
-                    <MenuItem sx={{ height: "36px" }} key="-1" value="" />
+                    <MenuItemContainer key="-1" value="" />
                     {availableSubPlanTypes?.map((type) => (
                       <MenuItem key={type.id} value={type.id}>
                         {type.name}
                         {type.archived && (
-                          <Chip
+                          <ArchivedChip
                             label={getLocaleString("common_table_archived")}
-                            icon={
-                              <WarningAmberIcon sx={{ fontSize: "16px" }} />
-                            }
+                            icon={<ArchivedIcon />}
                             color="warning"
-                            sx={{ marginLeft: "0.5rem" }}
                           />
                         )}
                       </MenuItem>
@@ -313,18 +313,12 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                       ? form.errors.subPlanTypeId
                       : "",
                   ) && (
-                    <FormHelperText sx={{ color: "red" }}>
+                    <FormErrorText>
                       {getLocaleString("modal_sub_plan_type_required")}
-                    </FormHelperText>
+                    </FormErrorText>
                   )}
-                </FormControl>
-                <FormControl
-                  fullWidth
-                  sx={{
-                    marginBottom: "1rem",
-                    maxHeight: "100px",
-                  }}
-                >
+                </CustomFormControl>
+                <CustomFormControl fullWidth>
                   <InputLabel id="section-label">
                     {getLocaleString("common_table_section")}
                   </InputLabel>
@@ -341,18 +335,15 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                     )}
                     onChange={(e) => handleChangeSectionId(e)}
                   >
-                    <MenuItem sx={{ height: "36px" }} key="-1" value="" />
+                    <MenuItemContainer key="-1" value="" />
                     {sections?.map((section) => (
                       <MenuItem key={section.id} value={section.id}>
                         {section.name}
                         {section.archived && (
-                          <Chip
+                          <ArchivedChip
                             label={getLocaleString("common_table_archived")}
-                            icon={
-                              <WarningAmberIcon sx={{ fontSize: "16px" }} />
-                            }
+                            icon={<ArchivedIcon />}
                             color="warning"
-                            sx={{ marginLeft: "0.5rem" }}
                           />
                         )}
                       </MenuItem>
@@ -363,18 +354,12 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                       ? form.errors.sectionId
                       : "",
                   ) && (
-                    <FormHelperText sx={{ color: "red" }}>
+                    <FormErrorText>
                       {getLocaleString("modal_section_required")}
-                    </FormHelperText>
+                    </FormErrorText>
                   )}
-                </FormControl>
-                <FormControl
-                  fullWidth
-                  sx={{
-                    marginBottom: "1rem",
-                    maxHeight: "100px",
-                  }}
-                >
+                </CustomFormControl>
+                <CustomFormControl fullWidth>
                   <InputLabel id="section-label">
                     {getLocaleString("common_table_subsection")}
                   </InputLabel>
@@ -391,18 +376,15 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                     )}
                     onChange={(e) => handleChangeSubsectionId(e)}
                   >
-                    <MenuItem sx={{ height: "36px" }} key="-1" value="" />
+                    <MenuItemContainer key="-1" value="" />
                     {availableSubSections?.map((subSection) => (
                       <MenuItem key={subSection.id} value={subSection.id}>
                         {subSection.name}
                         {subSection.archived && (
-                          <Chip
+                          <ArchivedChip
                             label={getLocaleString("common_table_archived")}
-                            icon={
-                              <WarningAmberIcon sx={{ fontSize: "16px" }} />
-                            }
+                            icon={<ArchivedIcon />}
                             color="warning"
-                            sx={{ marginLeft: "0.5rem" }}
                           />
                         )}
                       </MenuItem>
@@ -413,18 +395,12 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                       ? form.errors.subsectionId
                       : "",
                   ) && (
-                    <FormHelperText sx={{ color: "red" }}>
+                    <FormErrorText>
                       {getLocaleString("modal_sub_section_required")}
-                    </FormHelperText>
+                    </FormErrorText>
                   )}
-                </FormControl>
-                <FormControl
-                  fullWidth
-                  sx={{
-                    marginBottom: "1rem",
-                    maxHeight: "100px",
-                  }}
-                >
+                </CustomFormControl>
+                <CustomFormControl fullWidth>
                   <InputLabel>
                     {getLocaleString("common_table_paper_size")}
                   </InputLabel>
@@ -439,7 +415,7 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                     )}
                     onChange={(e) => handleChangePaperSizeId(e)}
                   >
-                    <MenuItem sx={{ height: "36px" }} key="-1" value="" />
+                    <MenuItemContainer key="-1" value="" />
                     {paperSizes.map((type) => (
                       <MenuItem key={type.id} value={type.id}>
                         {type.name}
@@ -451,11 +427,12 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                       ? form.errors.paperSizeId
                       : "",
                   ) && (
-                    <FormHelperText sx={{ color: "red" }}>
+                    <FormErrorText>
                       {getLocaleString("modal_paper_size_required")}
-                    </FormHelperText>
+                    </FormErrorText>
                   )}
-                </FormControl>
+                </CustomFormControl>
+                {/*<Grid container className="columns-3 justify-between">*/}
                 <Grid container columns={3} justifyContent="space-between">
                   <Grid item xs={1} sx={{ mb: 3, pr: 1 }}>
                     <FormControl fullWidth>
@@ -491,13 +468,13 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                       {Boolean(
                         form.errors.startDate && form.touched.startDate,
                       ) && (
-                        <FormHelperText sx={{ color: "red" }}>
+                        <FormErrorText>
                           {getLocaleString(
                             form.errors.startDate && form.touched.startDate
                               ? form.errors.startDate
                               : "",
                           )}
-                        </FormHelperText>
+                        </FormErrorText>
                       )}
                     </FormControl>
                   </Grid>
@@ -511,27 +488,15 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                         }}
                         views={["year", "month", "day"]}
                         disabled={true}
-                        slots={{
-                          textField: (params) => (
-                            <TextField
-                              {...params}
-                              helperText={getLocaleString(
-                                form.errors.endDate && form.touched.endDate
-                                  ? form.errors.endDate
-                                  : "",
-                              )}
-                            />
-                          ),
-                        }}
                       />
                       {Boolean(form.errors.endDate && form.touched.endDate) && (
-                        <FormHelperText sx={{ color: "red" }}>
+                        <FormErrorText>
                           {getLocaleString(
                             form.errors.endDate && form.touched.endDate
                               ? form.errors.endDate
                               : "",
                           )}
-                        </FormHelperText>
+                        </FormErrorText>
                       )}
                     </FormControl>
                   </Grid>
@@ -565,13 +530,13 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                       {Boolean(
                         form.errors.publishDate && form.touched.publishDate,
                       ) && (
-                        <FormHelperText sx={{ color: "red" }}>
+                        <FormErrorText>
                           {getLocaleString(
                             form.errors.publishDate && form.touched.publishDate
                               ? form.errors.publishDate
                               : "",
                           )}
-                        </FormHelperText>
+                        </FormErrorText>
                       )}
                     </FormControl>
                   </Grid>
@@ -579,21 +544,14 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                 <StageTable
                   data={data?.stages}
                   onChange={handleStagesChange}
-                  disable={false}
                   planStart={form.values.startDate}
-                  showRanges={true}
                 />
               </FormBox>
-              <Button
-                fullWidth
-                type="submit"
-                variant="contained"
-                sx={{ textTransform: "capitalize", marginTop: "1rem" }}
-              >
+              <SubmitButton fullWidth type="submit" variant="contained" disabled={data && !isChanged}>
                 {!editing
                   ? getLocaleString("common_create")
                   : getLocaleString("common_save")}
-              </Button>
+              </SubmitButton>
             </form>
             <CloseButtonBox>
               <CloseIcon onClick={close} />

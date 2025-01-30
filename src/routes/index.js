@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { useRoutes, Navigate, useNavigate } from "react-router-dom";
 import { useAuthState, useSetRedirectTo } from "../hooks/redux";
 import { createTheme, ThemeProvider } from "@mui/material";
@@ -6,11 +6,19 @@ import AuthProvider from "../providers/AuthProvider";
 import FullLayout from "../layout/FullLayout";
 import AuthLayout from "../layout/AuthLayout";
 import { ToastContainer } from "../components/ToastContainer";
-import { SpinnerContainer } from "../components/SpinnerContainer";
 import { UserRoles } from "../constants";
 
 const HomePage = lazy(() =>
   import("../pages/Home").then((p) => ({ default: p.default })),
+);
+const PDFComparisonPage = lazy(() =>
+  import("../pages/RandomPDFCompare").then((p) => ({ default: p.default })),
+);
+const TextComparisonPage = lazy(() =>
+  import("../pages/RandomTextCompare").then((p) => ({ default: p.default })),
+);
+const ImageComparisonPage = lazy(() =>
+  import("../pages/RandomImageCompare").then((p) => ({ default: p.default })),
 );
 const UserPage = lazy(() =>
   import("../pages/Management/User").then((p) => ({ default: p.default })),
@@ -29,19 +37,12 @@ const DocumentDetailsPage = lazy(() =>
 const ComparePage = lazy(() =>
   import("../pages/Compare").then((p) => ({ default: p.default })),
 );
-const SignaturePage = lazy(() =>
-  import("../pages/Signature").then((p) => ({ default: p.default })),
-);
+
 const SectionPage = lazy(() =>
   import("../pages/Management/Section").then((p) => ({ default: p.default })),
 );
 const SubSectionPage = lazy(() =>
   import("../pages/Management/SubSection").then((p) => ({
-    default: p.default,
-  })),
-);
-const SignedDocumentPage = lazy(() =>
-  import("../pages/Management/SignedDocument").then((p) => ({
     default: p.default,
   })),
 );
@@ -53,9 +54,6 @@ const RegisterPage = lazy(() =>
 );
 const TextComparePage = lazy(() =>
   import("../pages/TextCompare").then((p) => ({ default: p.default })),
-);
-const DemoPage = lazy(() =>
-  import("../pages/Demo/Demo").then((p) => ({ default: p.default })),
 );
 const PlanPage = lazy(() =>
   import("../pages/Management/Plan").then((p) => ({ default: p.default })),
@@ -124,13 +122,8 @@ const PaperSizePage = lazy(() =>
 const ProfilePage = lazy(() =>
   import("../pages/Profile").then((p) => ({ default: p.default })),
 );
-const PrintLogsPage = lazy(() =>
-  import("../pages/Management/PrintLogs").then((p) => ({ default: p.default })),
-);
-const PaperManagementPage = lazy(() =>
-  import("../pages/Management/PaperManagement").then((p) => ({
-    default: p.default,
-  })),
+const PaperConsumptionPage = lazy(() =>
+  import("../pages/Management/PaperConsumption").then((p) => ({ default: p.default })),
 );
 const PreviewDocumentPage = lazy(() =>
   import("../pages/Management/Preview").then((p) => ({ default: p.default })),
@@ -169,6 +162,54 @@ const AppRoutes = () => {
       ],
     },
     {
+      path: "/main-pdf-comparison",
+      element: <AppRoute component={PDFComparisonPage} />,
+      roles: [
+        UserRoles.SUPERADMIN,
+        UserRoles.ADMIN,
+        UserRoles.SUPERMASTER,
+        UserRoles.MASTER,
+        UserRoles.SUBMASTER,
+        UserRoles.EDITOR,
+        UserRoles.CHECKER,
+        UserRoles.PLANNER,
+        UserRoles.PRINTER,
+        UserRoles.CORRECTOR,
+      ],
+    },
+    {
+      path: "/main-text-comparison",
+      element: <AppRoute component={TextComparisonPage} />,
+      roles: [
+        UserRoles.SUPERADMIN,
+        UserRoles.ADMIN,
+        UserRoles.SUPERMASTER,
+        UserRoles.MASTER,
+        UserRoles.SUBMASTER,
+        UserRoles.EDITOR,
+        UserRoles.CHECKER,
+        UserRoles.PLANNER,
+        UserRoles.PRINTER,
+        UserRoles.CORRECTOR,
+      ],
+    },
+    {
+      path: "/main-image-comparison",
+      element: <AppRoute component={ImageComparisonPage} />,
+      roles: [
+        UserRoles.SUPERADMIN,
+        UserRoles.ADMIN,
+        UserRoles.SUPERMASTER,
+        UserRoles.MASTER,
+        UserRoles.SUBMASTER,
+        UserRoles.EDITOR,
+        UserRoles.CHECKER,
+        UserRoles.PLANNER,
+        UserRoles.PRINTER,
+        UserRoles.CORRECTOR,
+      ],
+    },
+    {
       path: "/result",
       element: <AppRoute component={DocumentPage} />,
       roles: [
@@ -176,6 +217,7 @@ const AppRoutes = () => {
         UserRoles.MASTER,
         UserRoles.CHECKER,
         UserRoles.CORRECTOR,
+        UserRoles.EDITOR,
       ],
     },
     {
@@ -202,6 +244,7 @@ const AppRoutes = () => {
         UserRoles.CHECKER,
         UserRoles.PLANNER,
         UserRoles.CORRECTOR,
+        UserRoles.PRINTER,
       ],
     },
     {
@@ -276,18 +319,8 @@ const AppRoutes = () => {
       roles: [UserRoles.SUPERADMIN, UserRoles.ADMIN, UserRoles.SUPERMASTER],
     },
     {
-      path: "/management/signed-document",
-      element: <AppRoute component={SignedDocumentPage} />,
-      roles: [UserRoles.SUPERADMIN, UserRoles.ADMIN, UserRoles.SUPERMASTER],
-    },
-    {
       path: "/compare",
       element: <AppRoute component={ComparePage} />,
-      roles: [UserRoles.SUPERADMIN, UserRoles.ADMIN, UserRoles.SUPERMASTER],
-    },
-    {
-      path: "/signature",
-      element: <AppRoute component={SignaturePage} />,
       roles: [UserRoles.SUPERADMIN, UserRoles.ADMIN, UserRoles.SUPERMASTER],
     },
     {
@@ -305,11 +338,6 @@ const AppRoutes = () => {
         UserRoles.PRINTER,
         UserRoles.CORRECTOR,
       ],
-    },
-    {
-      path: "/demo",
-      element: <AppRoute component={DemoPage} />,
-      roles: [UserRoles.SUPERADMIN, UserRoles.ADMIN, UserRoles.SUPERMASTER],
     },
     {
       path: "/text-compare",
@@ -394,11 +422,11 @@ const AppRoutes = () => {
     {
       path: "/management/print-request",
       element: <AppRoute component={PrintRequestPage} />,
-      roles: [UserRoles.PRINTER],
+      roles: [UserRoles.PRINTER, UserRoles.ADMIN],
     },
     {
-      path: "/management/print-logs",
-      element: <AppRoute component={PrintLogsPage} />,
+      path: "/management/paper-consumption",
+      element: <AppRoute component={PaperConsumptionPage} />,
       roles: [
         UserRoles.SUPERADMIN,
         UserRoles.ADMIN,
@@ -411,11 +439,6 @@ const AppRoutes = () => {
         UserRoles.PRINTER,
         UserRoles.CORRECTOR,
       ],
-    },
-    {
-      path: "management/paper-consumption",
-      element: <AppRoute component={PaperManagementPage} />,
-      roles: [UserRoles.SUPERADMIN, UserRoles.ADMIN, UserRoles.PRINTER],
     },
     {
       path: "/main-flow/plan/:id/prescriptions",
@@ -469,11 +492,9 @@ const AppRoutes = () => {
         UserRoles.MASTER,
         UserRoles.SUBMASTER,
         UserRoles.EDITOR,
-        UserRoles.CHECKER,
-        UserRoles.PLANNER,
-        UserRoles.CORRECTOR,
       ],
     },
+
     {
       path: "/profile",
       element: <AppRoute component={ProfilePage} />,
@@ -486,6 +507,7 @@ const AppRoutes = () => {
         UserRoles.EDITOR,
         UserRoles.CHECKER,
         UserRoles.PLANNER,
+        UserRoles.PRINTER,
         UserRoles.CORRECTOR,
       ],
     },
@@ -526,18 +548,14 @@ const AppRoutes = () => {
   return (
     <ThemeProvider theme={theme}>
       <AuthProvider>
-        {account !== undefined && (
-          <React.Fragment>
-            {account ? (
-              <FullLayout>{userRoutes}</FullLayout>
-            ) : (
-              <AuthLayout>{authRoutes}</AuthLayout>
-            )}
-          </React.Fragment>
-        )}
+        {account !== undefined &&
+          (account ? (
+            <FullLayout>{userRoutes}</FullLayout>
+          ) : (
+            <AuthLayout>{authRoutes}</AuthLayout>
+          ))}
       </AuthProvider>
       <ToastContainer />
-      <SpinnerContainer />
     </ThemeProvider>
   );
 };

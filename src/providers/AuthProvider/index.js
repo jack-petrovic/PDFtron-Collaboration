@@ -2,17 +2,16 @@ import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import {
   useAuthState,
-  useGetAccountAction,
   useSetTokenAction,
   useSetAccountAction,
   useSetRedirectTo,
 } from "../../hooks/redux";
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "../../constants";
+import { AuthService } from "../../services";
 
 const AuthProvider = ({ children }) => {
   const { tokens, account } = useAuthState();
   const setTokens = useSetTokenAction();
-  const getAccount = useGetAccountAction();
   const setAccount = useSetAccountAction();
   const setRedirectTo = useSetRedirectTo();
   const location = useLocation();
@@ -41,7 +40,7 @@ const AuthProvider = ({ children }) => {
     localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
 
     if (!account) {
-      getAccount();
+      AuthService.getAccount();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokens, account]);

@@ -4,37 +4,51 @@ import * as Yup from "yup";
 import { useFormik } from "formik";
 import {
   Box,
-  Button,
   FormControl,
   Modal,
   Select,
   InputLabel,
   MenuItem,
   TextField,
-  Chip,
   Switch,
-  FormHelperText,
   Grid,
+  Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
-import { CloseButtonBox, FormContainer } from "../style";
+import {
+  CloseButtonBox,
+  CustomFormControl,
+  FormContainer,
+  MenuItemContainer,
+  SubmitButton,
+} from "../style";
 import { useTranslation } from "react-i18next";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import moment from "moment";
+import {
+  FormTextField,
+  FormErrorText,
+  ArchivedIcon,
+  ArchivedChip,
+} from "../../../pages/style";
 
 const createValidationSchema = Yup.object().shape({
   userId: Yup.string().required("register_userId_required"),
   name: Yup.string().required("register_name_required"),
   email: Yup.string()
+    .matches(
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      'Invalid email format'
+    )
     .email("register_email_invalid")
     .required("register_email_required"),
   password: Yup.string()
     .required("register_password_required")
-    .min(8, "Password must be at least 8 characters")
-    .max(128, "Password must be no longer than 128 characters"),
+    .min(8, "register_password_min_length")
+    .max(128, "register_password_max_length")
+    .matches(/^[a-zA-Z0-9]+$/, "register_password_allowed_combination"),
   birthday: Yup.string()
     .required("register_birthday_required")
     .test("date", "Invalid date format", (value) => {
@@ -51,6 +65,10 @@ const editValidationSchema = Yup.object().shape({
   userId: Yup.string().required("register_userId_required"),
   name: Yup.string().required("register_name_required"),
   email: Yup.string()
+    .matches(
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      'Invalid email format'
+    )
     .email("register_email_invalid")
     .required("register_email_required"),
   birthday: Yup.string()
@@ -75,9 +93,10 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
   const id = data?.id;
   const editing = !!data;
 
-  const [toggle, setToggle] = useState(true);
   const [sectionId, setSectionId] = useState(0);
   const [gender, setGender] = useState(true);
+  const [toggle, setToggle] = useState(true);
+
   const sections = useSelector((state) => state.sectionReducer.sections);
   const subSections = useSelector(
     (state) => state.subSectionReducer.subSections,
@@ -139,7 +158,7 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
   });
 
   useEffect(() => {
-    if (data) {
+    if (data && open) {
       form.setValues({
         userId: data.userId ?? "",
         name: data.name ?? "",
@@ -154,9 +173,38 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
         gender: data.gender ?? true,
       });
       setSectionId(data.sectionId);
+    } else {
+      form.resetForm();
+      setSectionId("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
+  }, [data, open]);
+
+  const isChanged = useMemo(
+    () =>
+      (data && (
+        form.values.userId !== data?.userId ||
+        form.values.name !== data?.name ||
+        form.values.email !== data?.email ||
+        form.values.sectionId !== data?.sectionId ||
+        form.values.subsectionId !== data?.subsectionId ||
+        form.values.roleId !== data?.roleId ||
+        form.values.activated !== data?.activated ||
+        form.values.birthday !== data?.birthday ||
+        form.values.gender !== data?.gender
+      )) || (!data && (
+        form.values.userId !== "" ||
+        form.values.name !== "" ||
+        form.values.email !== "" ||
+        form.values.sectionId !== "" ||
+        form.values.subsectionId !== "" ||
+        form.values.roleId !== "" ||
+        form.values.activated !== false ||
+        form.values.birthday !== "" ||
+        form.values.gender !== true
+      ))
+    , [form.values, data]
+  )
 
   const availableSubSections = useMemo(() => {
     return !sectionId
@@ -174,13 +222,16 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
       >
         <FormContainer sx={{ maxHeight: "90vh", padding: 2, paddingTop: 4 }}>
           <form onSubmit={form.handleSubmit}>
-            <div className="flex items-center my-5">
-              <p className="mr-5">{getLocaleString("activate_user")}</p>
-              <Switch
-                defaultChecked={data?.activated ?? false}
-                onChange={handleToggle}
-              />
-            </div>
+            <Box className="flex items-center justify-between">
+              <Box className="flex items-center">
+                <Typography className="mr-5">{getLocaleString("activate_user")}</Typography>
+                <Switch
+                  defaultChecked={data?.activated ?? false}
+                  onChange={handleToggle}
+                />
+              </Box>
+              <img src="/assets/img/user.svg" className="w-32 h-28" alt="profile-image"/>
+            </Box>
             <Box sx={{ maxHeight: "60vh", overflowY: "auto" }}>
               <TextField
                 fullWidth
@@ -196,7 +247,7 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
                 error={Boolean(form.errors.userId && form.touched.userId)}
                 sx={{ mt: 1, mb: 3 }}
               />
-              <TextField
+              <FormTextField
                 fullWidth
                 label={getLocaleString("register_name_label")}
                 placeholder={getLocaleString("register_name_placeholder")}
@@ -205,9 +256,8 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
                   form.errors.name && form.touched.name ? form.errors.name : "",
                 )}
                 error={Boolean(form.errors.name && form.touched.name)}
-                sx={{ mb: 3 }}
               />
-              <TextField
+              <FormTextField
                 fullWidth
                 label={getLocaleString("register_email_label")}
                 placeholder={getLocaleString("register_email_placeholder")}
@@ -218,7 +268,6 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
                     : "",
                 )}
                 error={Boolean(form.errors.email && form.touched.email)}
-                sx={{ mb: 3 }}
               />
               <Grid container columns={2}>
                 <Grid item xs={1} sx={{ mb: 3, pr: 1 }}>
@@ -263,13 +312,13 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
                       />
                     </LocalizationProvider>
                     {Boolean(form.errors.birthday && form.touched.birthday) && (
-                      <FormHelperText sx={{ color: "red" }}>
+                      <FormErrorText>
                         {getLocaleString(
                           form.errors.birthday && form.touched.birthday
                             ? form.errors.birthday
                             : "",
                         )}
-                      </FormHelperText>
+                      </FormErrorText>
                     )}
                   </FormControl>
                 </Grid>
@@ -294,20 +343,14 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
                       </MenuItem>
                     </Select>
                     {Boolean(form.errors.gender && form.touched.gender) && (
-                      <FormHelperText sx={{ color: "red" }}>
+                      <FormErrorText>
                         {getLocaleString("register_gender_required")}
-                      </FormHelperText>
+                      </FormErrorText>
                     )}
                   </FormControl>
                 </Grid>
               </Grid>
-              <FormControl
-                fullWidth
-                sx={{
-                  marginBottom: "1rem",
-                  maxHeight: "100px",
-                }}
-              >
+              <CustomFormControl fullWidth>
                 <InputLabel id="section-label">
                   {getLocaleString("select_user_role_label")}
                 </InputLabel>
@@ -323,11 +366,10 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
                     <MenuItem key={role.id} value={role.id}>
                       {role.name}
                       {role.archived && (
-                        <Chip
+                        <ArchivedChip
                           label={getLocaleString("common_table_archived")}
-                          icon={<WarningAmberIcon sx={{ fontSize: "16px" }} />}
+                          icon={<ArchivedIcon />}
                           color="warning"
-                          sx={{ marginLeft: "0.5rem" }}
                         />
                       )}
                     </MenuItem>
@@ -338,13 +380,13 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
                     ? form.errors.roleId
                     : "",
                 ) && (
-                  <FormHelperText sx={{ color: "red" }}>
+                  <FormErrorText>
                     {getLocaleString("modal_role_required")}
-                  </FormHelperText>
+                  </FormErrorText>
                 )}
-              </FormControl>
+              </CustomFormControl>
               {!editing && (
-                <TextField
+                <FormTextField
                   fullWidth
                   type="password"
                   label={getLocaleString("login_password_label")}
@@ -360,11 +402,10 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
                       ? form.errors.password
                       : "",
                   )}
-                  sx={{ mb: 3 }}
                 />
               )}
               {!editing && (
-                <TextField
+                <FormTextField
                   fullWidth
                   type="password"
                   label={getLocaleString("register_confirm_password_label")}
@@ -382,16 +423,9 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
                       ? form.errors.confirmPassword
                       : "",
                   )}
-                  sx={{ mb: 3 }}
                 />
               )}
-              <FormControl
-                fullWidth
-                sx={{
-                  marginBottom: "1rem",
-                  maxHeight: "100px",
-                }}
-              >
+              <CustomFormControl fullWidth>
                 <InputLabel id="section-label">
                   {getLocaleString("common_table_section")}
                 </InputLabel>
@@ -403,29 +437,22 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
                   {...form.getFieldProps("sectionId")}
                   onChange={(e) => handleChangeSectionId(e)}
                 >
-                  <MenuItem sx={{ height: "36px" }} key="-1" value="" />
+                  <MenuItemContainer key="-1" value="" />
                   {sections?.map((section) => (
                     <MenuItem key={section.id} value={section.id}>
                       {section.name}
                       {section.archived && (
-                        <Chip
+                        <ArchivedChip
                           label={getLocaleString("common_table_archived")}
-                          icon={<WarningAmberIcon sx={{ fontSize: "16px" }} />}
+                          icon={<ArchivedIcon />}
                           color="warning"
-                          sx={{ marginLeft: "0.5rem" }}
                         />
                       )}
                     </MenuItem>
                   ))}
                 </Select>
-              </FormControl>
-              <FormControl
-                fullWidth
-                sx={{
-                  marginBottom: "1rem",
-                  maxHeight: "100px",
-                }}
-              >
+              </CustomFormControl>
+              <CustomFormControl fullWidth>
                 <InputLabel id="sub-section-label">
                   {getLocaleString("common_table_subsection")}
                 </InputLabel>
@@ -439,33 +466,27 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
                     form.setFieldValue("subsectionId", e.target.value)
                   }
                 >
-                  <MenuItem sx={{ height: "36px" }} key="-1" value="" />
+                  <MenuItemContainer key="-1" value="" />
                   {availableSubSections?.map((subSection) => (
                     <MenuItem key={subSection.id} value={subSection.id}>
                       {subSection.name}
                       {subSection.archived && (
-                        <Chip
+                        <ArchivedChip
                           label={getLocaleString("common_table_archived")}
-                          icon={<WarningAmberIcon sx={{ fontSize: "16px" }} />}
+                          icon={<ArchivedIcon />}
                           color="warning"
-                          sx={{ marginLeft: "0.5rem" }}
                         />
                       )}
                     </MenuItem>
                   ))}
                 </Select>
-              </FormControl>
+              </CustomFormControl>
             </Box>
-            <Button
-              fullWidth
-              type="submit"
-              variant="contained"
-              sx={{ textTransform: "capitalize", marginTop: 2 }}
-            >
+            <SubmitButton fullWidth type="submit" variant="contained" disabled={!isChanged}>
               {editing
                 ? getLocaleString("common_save")
                 : getLocaleString("common_create")}
-            </Button>
+            </SubmitButton>
           </form>
           <CloseButtonBox>
             <CloseIcon onClick={close} />

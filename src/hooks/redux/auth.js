@@ -1,7 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
 import {
-  loginAction,
-  getAccountAction,
   setToken,
   setAccount,
   logoutAction,
@@ -10,11 +8,6 @@ import {
 } from "../../redux/actions";
 
 export const useAuthState = () => useSelector(({ authReducer }) => authReducer);
-
-export const useLoginAction = () => {
-  const dispatch = useDispatch();
-  return async (values) => dispatch(loginAction(values));
-};
 
 export const useRegisterAction = () => {
   const dispatch = useDispatch();
@@ -29,11 +22,6 @@ export const useSetTokenAction = () => {
 export const useSetAccountAction = () => {
   const dispatch = useDispatch();
   return (account) => dispatch(setAccount(account));
-};
-
-export const useGetAccountAction = () => {
-  const dispatch = useDispatch();
-  return () => dispatch(getAccountAction());
 };
 
 export const useLogout = () => {

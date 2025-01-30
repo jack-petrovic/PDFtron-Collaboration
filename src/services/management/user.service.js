@@ -12,6 +12,10 @@ export const uploadAvatar = (id, form, showSpinner = true) => {
   return post(`/management/users/upload-avatars/${id}`, form, {}, showSpinner);
 };
 
+export const removeAvatar = (id, showSpinner = true) => {
+  return post(`/management/users/remove-avatars/${id}`, {}, showSpinner);
+}
+
 export const updateUser = (id, data, showSpinner = true) => {
   return put(`/management/users/${id}`, data, {}, showSpinner);
 };

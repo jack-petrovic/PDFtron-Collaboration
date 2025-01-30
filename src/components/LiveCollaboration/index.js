@@ -3,7 +3,11 @@ import { useTranslation } from "react-i18next";
 import i18next from "i18next";
 import { Box } from "@mui/material";
 import WebViewer from "@pdftron/webviewer";
-import { getAnnotationsByDocument, getProhibitedWords } from "../../services";
+import {
+  getAnnotationsByDocument,
+  getProhibitedWords,
+  ToastService,
+} from "../../services";
 import {
   sendAnnotationChange,
   clearWebViewerStorage,
@@ -11,9 +15,9 @@ import {
 import { URL_WEB_SOCKET } from "../../constants";
 import { useAuthState } from "../../hooks/redux";
 
-function LiveCollaboration(props) {
+const LiveCollaboration = (props) => {
   const { t } = useTranslation();
-  let doc = props.file;
+  const doc = props.file;
   const { account } = useAuthState();
   const { language } = i18next;
   const DOCUMENT_ID = doc?.documentId;
@@ -33,22 +37,24 @@ function LiveCollaboration(props) {
     })();
   }, [prohibitedWords]);
 
-  const loadXfdfStrings = (documentId) => {
-    return getAnnotationsByDocument(documentId);
+  const loadXfdfStrings = async (documentId) => {
+    return await getAnnotationsByDocument(documentId);
   };
 
   useEffect(() => {
-    let query = {};
-    query.pageSize = 1000;
-    query.page = 1;
-    query.keyword = "";
+    let query = { pageSize: 1000, page: 0, keyword: "" };
     getProhibitedWords(query)
       .then((res) => {
         setProhibitedWords(res?.rows);
       })
       .catch((err) => {
         console.log("err=>", err);
+        ToastService.showHttpError(
+          err,
+          getLocaleString("toast_load_prohibited_words_failed"),
+        );
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -122,13 +128,11 @@ function LiveCollaboration(props) {
           searchWordBtn.id = "search-btn";
           searchWordBtn.style.color = "#FFF";
           searchWordBtn.style.border = "none";
-          searchWordBtn.style.backgroundColor = "#589ad1";
+          searchWordBtn.style.backgroundColor = "#1976d2";
           searchWordBtn.style[":hover"] = "#1a4971";
-          searchWordBtn.style.borderRadius = "6px";
-          searchWordBtn.style.paddingTop = "8px";
-          searchWordBtn.style.paddingBottom = "8px";
-          searchWordBtn.style.paddingRight = "12px";
-          searchWordBtn.style.paddingLeft = "12px";
+          searchWordBtn.style.borderRadius = "5px";
+          searchWordBtn.style.padding = "8px 4px";
+          searchWordBtn.style.fontSize = "0.7rem";
           searchWordBtn.style.cursor = "pointer";
           searchWordBtn.style.boxShadow = "inset 0 0 10px 1px #477da9";
           searchWordBtn.addEventListener("click", callback);
@@ -160,20 +164,22 @@ function LiveCollaboration(props) {
 
   useEffect(() => {
     if (account.role) {
-      WebViewer(
+      WebViewer.Iframe(
         {
-          path: "/webviewer/lib", // path to the PDFTron 'lib' folder
+          path: "/webviewer/lib",
           initialDoc: doc.urlFile,
+          licenseKey:
+            "demo:1733762057552:7ed577b4030000000021c2547b221caaa8034b12df9500f1a11ef76a43",
           documentXFDFRetriever: async () => {
-            console.log("-=================================================>");
             const rows = await loadXfdfStrings(DOCUMENT_ID);
             return rows.map((row) => row.xfdfString);
           },
+          ui: "legacy",
         },
         viewer.current,
       ).then((instance) => {
         setInstance(instance);
-        let connection = new WebSocket(URL_WEB_SOCKET);
+        const connection = new WebSocket(URL_WEB_SOCKET);
         connection.onopen = () => {
           console.log("WebSocket Client Connected");
         };
@@ -357,11 +363,16 @@ function LiveCollaboration(props) {
 
         connection.onmessage = async (message) => {
           if (message.data !== "refresh") {
-            const annotation = JSON.parse(message.data);
-            const annotations = await annotationManager.importAnnotationCommand(
-              annotation.xfdfString,
-            );
-            await annotationManager.drawAnnotationsFromList(annotations);
+            try {
+              const annotation = JSON.parse(message.data);
+              const annotations =
+                await annotationManager.importAnnotationCommand(
+                  annotation.xfdfString,
+                );
+              await annotationManager.drawAnnotationsFromList(annotations);
+            } catch (error) {
+              console.error("Error processing annotation:", error);
+            }
           }
         };
 
@@ -386,6 +397,6 @@ function LiveCollaboration(props) {
   }, [account]);
 
   return <Box ref={viewer} height="100%" />;
-}
+};
 
 export default LiveCollaboration;

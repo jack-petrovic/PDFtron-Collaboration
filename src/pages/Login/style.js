@@ -13,7 +13,7 @@ export const FormWrapper = styled(Box)(() => ({
   backgroundColor: "#f8fafc",
 }));
 
-export const FromContainer = styled(Box)(() => ({
+export const FormContainer = styled(Box)(() => ({
   backgroundColor: "#fcfcfc",
   borderRadius: "1rem",
   width: "500px",

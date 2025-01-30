@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { dayLabels, monthLabels, weekLabels } from "../../constants";
 
-function Repeat({ onChange, data }) {
+const Repeat = ({ onChange, data }) => {
   const { t } = useTranslation();
   const [cycle, setCycle] = useState("Weekly");
   const [repeatValue, setRepeatValue] = useState([]);
@@ -147,6 +147,6 @@ function Repeat({ onChange, data }) {
       </FormControl>
     </Box>
   );
-}
+};
 
 export default Repeat;

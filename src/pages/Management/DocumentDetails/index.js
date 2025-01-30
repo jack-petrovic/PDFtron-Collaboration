@@ -24,10 +24,15 @@ const Document = () => {
   const getLocaleString = (key) => t(key);
 
   useEffect(() => {
-    getDocument(documentId).then((res) => {
-      setFile(res.doc);
-      setPrevStageFile(res.prevDoc);
-    });
+    getDocument(documentId)
+      .then((res) => {
+        setFile(res.doc);
+        setPrevStageFile(res.prevDoc);
+      })
+      .catch((err) => {
+        console.log("err=>", err);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentId]);
 
   const handleGoBack = () => {
@@ -73,7 +78,11 @@ const Document = () => {
                 <LiveCollaboration file={file} />
               )}
               {mode === "imageCompare" && (
-                <ImageCompare file1={prevStageFile} file2={file} />
+                <ImageCompare
+                  file1={prevStageFile}
+                  file2={file}
+                  isRandomMode={false}
+                />
               )}
             </React.Fragment>
           )}

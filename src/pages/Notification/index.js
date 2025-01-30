@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Box, Button, Menu, Pagination, Typography } from "@mui/material";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { Box, Button, Menu, Typography } from "@mui/material";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import moment from "moment";
 import CustomDataGrid from "../../components/common/DataGrid";
@@ -17,9 +16,11 @@ import {
   ActionMenuItem,
   ContentHeader,
   ContentWrapper,
+  MoreActionsIcon,
 } from "../style";
 import { useDispatch, useSelector } from "react-redux";
 import { setNotifications } from "../../redux/actions";
+import debounce from "lodash/debounce";
 
 const Notification = () => {
   const { t } = useTranslation();
@@ -27,29 +28,33 @@ const Notification = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [activeRow, setActiveRow] = useState(null);
   const isOpen = Boolean(anchorEl);
-  const pageSize = 10;
-  const [page, setPage] = useState(1);
-  const [totalPage, setTotalPage] = useState();
   const [tableRows, setTableRows] = useState([]);
   const [filterModel, setFilterModel] = useState({ items: [] });
+  const [rowLength, setRowLength] = useState(0);
   const notifications = useSelector(
     (state) => state.notificationReducer.notifications,
   );
   const dispatch = useDispatch();
   const getLocaleString = (key) => t(key);
 
+  const [paginationModel, setPaginationModel] = useState({
+    pageSize: 10,
+    page: 0,
+  });
+
   const getAllNotifications = useCallback(() => {
-    let query = {};
-    query.pageSize = pageSize;
-    query.page = page;
-    query.filters = filterModel.items.map((item) => ({
-      field: item.field,
-      operator: item.operator,
-      value: item.value,
-    }));
-    query.filtersOperator = filterModel.logicOperator;
+    let query = {
+      pageSize: paginationModel.pageSize,
+      page: paginationModel.page,
+      filters: filterModel.items.map((item) => ({
+        field: item.field,
+        operator: item.operator,
+        value: item.value,
+      })),
+      filtersOperator: filterModel.logicOperator,
+    };
     return getNotifications(query);
-  }, [filterModel, pageSize, page]);
+  }, [filterModel, paginationModel]);
 
   useEffect(() => {
     if (
@@ -66,14 +71,17 @@ const Notification = () => {
     }
     getAllNotifications()
       .then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
+        setRowLength(data.count);
         setTableRows(data.rows);
       })
       .catch((err) => {
-        ToastService.error(getLocaleString("toast_load_notification_failed"));
+        ToastService.showHttpError(
+          err,
+          getLocaleString("toast_load_notification_failed"),
+        );
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getAllNotifications, filterModel, notifications]);
+  }, [getAllNotifications, filterModel, notifications, paginationModel]);
 
   const handleClick = (event, row) => {
     setActiveRow(row);
@@ -88,53 +96,37 @@ const Notification = () => {
     setFilterModel(filter);
   };
 
+  const handleDebounceChangeSearch = debounce(handleChangedSearch, 500);
+
   const handleMarkAsRead = async () => {
-    try {
-      await readNotification(activeRow.id).then((res) => {
-        ToastService.success(getLocaleString(res.message));
+    await readNotification(activeRow.id).then((res) => {
+      ToastService.success(getLocaleString(res.message));
+    });
+    await getAllNotifications().then((res) => {
+      setTableRows(res.rows);
+      getNotifications({
+        pageSize: 10,
+        page: 0,
+      }).then((res) => {
+        dispatch(setNotifications(res.rows));
       });
-      await getAllNotifications().then((res) => {
-        setTableRows(res.rows);
-        getNotifications({
-          pageSize: 10,
-          page: 1,
-        }).then((res) => {
-          dispatch(setNotifications(res.rows));
-        });
-      });
-      handleClose();
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
+    });
+    handleClose();
   };
 
   const handleRemoveNotification = async (activeRow) => {
-    try {
-      await deleteNotification(activeRow.id).then((res) => {
-        ToastService.success(getLocaleString(res.message));
+    await deleteNotification(activeRow.id).then((res) => {
+      ToastService.success(getLocaleString(res.message));
+    });
+    await getAllNotifications().then((data) => {
+      setRowLength(data.count);
+      setTableRows(data.rows);
+      getNotifications({
+        pageSize: 10,
+        page: 0,
       });
-      await getAllNotifications().then((data) => {
-        setTotalPage(Math.ceil(data.count / pageSize));
-        setTableRows(data.rows);
-        getNotifications({
-          pageSize: 10,
-          page: 1,
-        });
-      });
-      handleClose();
-    } catch (err) {
-      console.log("err=>", err);
-      ToastService.error(
-        getLocaleString(err.response?.data?.message || "common_network_error"),
-      );
-    }
-  };
-
-  const handleChangePage = (event, value) => {
-    setPage(value);
+    });
+    handleClose();
   };
 
   const renderCell = ({ row }) => {
@@ -147,7 +139,7 @@ const Notification = () => {
           aria-expanded={isOpen ? "true" : undefined}
           onClick={(event) => handleClick(event, row)}
         >
-          <MoreVertIcon sx={{ color: "gray" }} />
+          <MoreActionsIcon />
         </Button>
       </ActionMenuButtonWrapper>
     );
@@ -159,20 +151,21 @@ const Notification = () => {
       headerName: getLocaleString("common_table_number"),
       editable: false,
       filterable: false,
-      flex: 1,
+      width: 100,
     },
     {
       field: "content",
       headerName: getLocaleString("common_table_content"),
       editable: false,
       flex: 3,
+      minWidth: 300,
     },
     {
       field: "unread",
       headerName: getLocaleString("common_table_read"),
       editable: false,
       type: "boolean",
-      flex: 1,
+      width: 100,
       renderCell: ({ row }) => (
         <Typography className="text-gray-500">
           {row.unread ? getLocaleString("no") : getLocaleString("yes")}
@@ -185,6 +178,7 @@ const Notification = () => {
       editable: false,
       type: "date",
       flex: 1,
+      minWidth: 150,
       renderCell: ({ row }) =>
         moment(row.createdAt).utc(false).format("YYYY-MM-DD"),
     },
@@ -194,22 +188,24 @@ const Notification = () => {
       editable: false,
       type: "date",
       flex: 1,
+      minWidth: 150,
       renderCell: ({ row }) =>
         moment(row.updatedAt).utc(false).format("YYYY-MM-DD"),
     },
     {
       field: "action",
-      headerName: "",
+      headerName: getLocaleString("common_table_action"),
       editable: false,
       filterable: false,
-      flex: 1,
+      sortable: false,
+      width: 100,
       renderCell,
     },
   ];
 
   const rows = tableRows.map((item, index) => ({
     ...item,
-    no: (page - 1) * pageSize + index + 1,
+    no: paginationModel.page * paginationModel.pageSize + index + 1,
     enabled: item.enabled ? "Yes" : "No",
     content: t(JSON.parse(item?.content).key, JSON.parse(item?.content).data),
     createdAt: moment(item.createdAt).toDate(),
@@ -223,12 +219,12 @@ const Notification = () => {
   return (
     <ContentWrapper>
       <ContentHeader>
-        <Box>
+        <Box className="mr-2">
           <Typography variant="h5">
             {getLocaleString("notification_page_title")}
           </Typography>
         </Box>
-        <Box display="flex" justifyContent="between" gap="4px">
+        <Box className="sm:flex justify-between gap-1">
           <Button
             variant="outlined"
             startIcon={<ArrowBackIosIcon />}
@@ -243,18 +239,12 @@ const Notification = () => {
         rows={rows}
         columns={notificationTableColumns}
         filterMode="server"
+        rowLength={rowLength}
+        onPaginationModelChange={setPaginationModel}
+        paginationModel={paginationModel}
         filterModel={filterModel}
-        onFilterChanged={(filter) => handleChangedSearch(filter)}
+        onFilterChanged={handleDebounceChangeSearch}
       />
-      <Box display="flex" alignItems="center" justifyContent="center" pt={4}>
-        <Pagination
-          color="primary"
-          shape="rounded"
-          count={totalPage}
-          page={page}
-          onChange={handleChangePage}
-        />
-      </Box>
       {isOpen && (
         <Menu
           id="basic-menu"

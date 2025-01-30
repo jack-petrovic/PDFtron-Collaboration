@@ -18,7 +18,6 @@ import {
   getSubPlanTypes,
   getTypes,
   getNotifications,
-  ToastService,
 } from "../../services";
 import Header from "../parts/Header";
 import { URL_WEB_SOCKET } from "../../constants";
@@ -31,121 +30,50 @@ const FullLayout = ({ children }) => {
   const { t } = useTranslation();
   const getLocaleString = (key) => t(key);
 
+  const fetchData = async (fetchFunction, action) => {
+    const res = await fetchFunction();
+    if (res.rows) {
+      dispatch(action(res.rows));
+    } else {
+      throw new Error(getLocaleString("common_network_error"));
+    }
+  };
+
   useEffect(() => {
-    getSections()
-      .then((res) => {
-        dispatch(setSections(res.rows));
-      })
-      .catch((err) => {
-        console.log("err=>", err);
-      });
+    const fetchInitialData = async () => {
+      await Promise.all([
+        fetchData(getSections, setSections),
+        fetchData(getSubSections, setSubSections),
+        fetchData(getTypes, setPlanTypes),
+        fetchData(getPaperSizes, setPaperSizes),
+        fetchData(getSubPlanTypes, setSubPlanTypes),
+        fetchData(getRoles, setRoles),
+        fetchData(getStages, setStages),
+      ]);
+    };
+
+    fetchInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    getSubSections()
-      .then((res) => {
-        dispatch(setSubSections(res.rows));
-      })
-      .catch((err) => {
-        console.log("err=>", err);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const fetchNotifications = async () => {
+      const res = await getNotifications({ pageSize: 10, page: 0 });
+      dispatch(setNotifications(res.rows));
+    };
 
-  useEffect(() => {
-    getTypes()
-      .then((res) => {
-        dispatch(setPlanTypes(res.rows));
-      })
-      .catch((err) => {
-        console.log("err=>", err);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    getPaperSizes()
-      .then((res) => {
-        dispatch(setPaperSizes(res.rows));
-      })
-      .catch((err) => {
-        console.log("err=>", err);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    getSubPlanTypes()
-      .then((res) => {
-        dispatch(setSubPlanTypes(res.rows));
-      })
-      .catch((err) => {
-        console.log("err=>", err);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    getStages()
-      .then((res) => {
-        dispatch(setStages(res.rows));
-      })
-      .catch((err) => {
-        console.log("err=>", err);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    getRoles()
-      .then((res) => {
-        dispatch(setRoles(res.rows));
-      })
-      .catch((err) => {
-        console.log("err=>", err);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    getNotifications({
-      pageSize: 10,
-      page: 1,
-    })
-      .then((res) => {
-        dispatch(setNotifications(res.rows));
-      })
-      .catch((err) => {
-        console.log("err=>", err);
-        ToastService.error(
-          getLocaleString(
-            err.response?.data?.message || "common_network_error",
-          ),
-        );
-      });
+    fetchNotifications();
 
     const connection = new WebSocket(URL_WEB_SOCKET);
     connection.onmessage = async (message) => {
       if (message.data === "refresh") {
-        await getNotifications({
-          pageSize: 10,
-          page: 1,
-        })
-          .then((res) => {
-            dispatch(setNotifications(res.rows));
-          })
-          .catch((err) => {
-            console.log("err=>", err);
-            ToastService.error(
-              getLocaleString(
-                err.response?.data?.message || "common_network_error",
-              ),
-            );
-          });
+        await fetchNotifications();
       }
     };
-    return () => connection.close();
+
+    return () => {
+      connection.close();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

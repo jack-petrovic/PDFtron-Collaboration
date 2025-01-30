@@ -1,13 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import CloseIcon from "@mui/icons-material/Close";
 import {
   Box,
-  Button,
-  FormControl,
-  FormHelperText,
   InputLabel,
   MenuItem,
   Modal,
@@ -15,7 +12,13 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { CloseButtonBox, FormBox, FormContainer } from "../style";
+import {
+  CloseButtonBox,
+  CustomFormControl,
+  FormBox,
+  FormContainer,
+  SubmitButton,
+} from "../style";
 import FileDropzone from "../../FileDropzone";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import { FileDropzoneContainer } from "./style";
@@ -24,6 +27,7 @@ import { ToastService } from "../../../services";
 import { MenuProps, PrintRequestStatus } from "../../../constants";
 import { useSelector } from "react-redux";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import { FormErrorText } from "../../../pages/style";
 
 const validationSchema = Yup.object().shape({
   title: Yup.string().required("modal_title_required"),
@@ -33,7 +37,7 @@ const validationSchema = Yup.object().shape({
   printVolume: Yup.number().required("modal_print_volume_required"),
 });
 
-const CreatePrintRequestModal = ({ open, close, create, update }) => {
+const CreatePrintRequestModal = ({ open, close, create }) => {
   const { t } = useTranslation();
   const [file, setFile] = useState(null);
   const paperSizes = useSelector((state) => state.paperSizeReducer.paperSizes);
@@ -87,7 +91,7 @@ const CreatePrintRequestModal = ({ open, close, create, update }) => {
         form.setFieldValue("fileName", file.name);
       };
 
-      fileReader.onerror = (error) => {
+      fileReader.onerror = () => {
         ToastService.error(
           getLocaleString("toast_upload_live_document_failed"),
         );
@@ -123,6 +127,16 @@ const CreatePrintRequestModal = ({ open, close, create, update }) => {
     },
     onSubmit: handleSubmit,
   });
+
+  const isChanged = useMemo(
+    () =>
+      form.values.title !== "" ||
+      form.values.printVolume !== 0 ||
+      form.values.note !== "This is manual print request" ||
+      form.values.paperSize !== "" ||
+      form.values.fileName !== ""
+    , [form.values]
+  );
 
   return (
     <Modal open={open} onClose={close}>
@@ -209,13 +223,7 @@ const CreatePrintRequestModal = ({ open, close, create, update }) => {
                   )}
                 />
               </Box>
-              <FormControl
-                fullWidth
-                sx={{
-                  marginBottom: "1rem",
-                  maxHeight: "100px",
-                }}
-              >
+              <CustomFormControl fullWidth>
                 <InputLabel id="paperSize-label">
                   {getLocaleString("common_table_paper_size")}
                 </InputLabel>
@@ -236,21 +244,16 @@ const CreatePrintRequestModal = ({ open, close, create, update }) => {
                   ))}
                 </Select>
                 {Boolean(form.errors.paperSize && form.touched.paperSize) && (
-                  <FormHelperText sx={{ color: "red" }}>
+                  <FormErrorText>
                     {getLocaleString("modal_paper_size_required")}
-                  </FormHelperText>
+                  </FormErrorText>
                 )}
-              </FormControl>
+              </CustomFormControl>
             </FormBox>
 
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              sx={{ textTransform: "capitalize", marginTop: "1rem" }}
-            >
+            <SubmitButton type="submit" variant="contained" color="primary" disabled={!isChanged}>
               {getLocaleString("common_create")}
-            </Button>
+            </SubmitButton>
           </form>
           <CloseButtonBox>
             <CloseIcon onClick={close} />
