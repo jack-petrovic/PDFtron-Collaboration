@@ -113,6 +113,8 @@ const CreateStageModal = ({ data, open, close, create, update }) => {
                     }
                     label={getLocaleString("common_table_enable")}
                   />
+                </div>
+                  />
                 </Box>
                 <CloseButtonBox>
                   <CloseIcon onClick={close} />
