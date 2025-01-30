@@ -376,7 +376,7 @@ const TextComposer = ({
         />
       </Box>
 
-      <div
+      <Box
         className="quill-container"
         onKeyDownCapture={onKeyDownCapture}
         ref={containerRef}
@@ -401,7 +401,7 @@ const TextComposer = ({
             dropdownItemIndexRef={dropdownItemIndexRef}
           />
         )}
-      </div>
+      </Box>
       <ConfirmModal
         open={!!confirmDialogData}
         content={confirmDialogData?.content}

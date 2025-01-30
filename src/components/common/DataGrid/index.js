@@ -65,6 +65,7 @@ const CustomDataGrid = ({
         className="data-grid"
         rows={rows}
         columns={columns}
+        getRowClassName={(params)  => !!params.row.isHighlighted ? 'bg-yellow-500' : ''}
         scrollbarSize={50}
         style={{ height: hasRows ? "auto" : "50vh" }}
         localeText={localeText}

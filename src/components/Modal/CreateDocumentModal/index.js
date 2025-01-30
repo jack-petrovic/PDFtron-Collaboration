@@ -55,7 +55,7 @@ const CreateDocumentModal = ({ open, close, data, create, update }) => {
   };
 
   useEffect(() => {
-    let query = { pageSize: 100, page: 0 };
+    let query = { pageSize: 100, page: 0, sort: { publishDate : 'desc' } };
     getPlans(query)
       .then((data) => {
         setPlans(data.rows);

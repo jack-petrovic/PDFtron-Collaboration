@@ -1,5 +1,7 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { Box } from "@mui/material";
+import Typography from "@mui/material/Typography";
 
 export const MessageArea = ({ messages }) => {
   const { t } = useTranslation();
@@ -10,9 +12,9 @@ export const MessageArea = ({ messages }) => {
   }, [messages]);
 
   return (
-    <div className="message-area" role="alert">
-      <h3>{getLocaleString("gantt_chart_bottom_messages")}:</h3>
+    <Box className="message-area" role="alert">
+      <Typography variant="h6">{getLocaleString("gantt_chart_bottom_messages")}:</Typography>
       <ul>{messageItems}</ul>
-    </div>
+    </Box>
   );
 };

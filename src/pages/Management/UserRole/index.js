@@ -224,9 +224,9 @@ const UserRole = () => {
       minWidth: 150,
       renderCell: ({ row }) => {
         return (
-          <div className="flex items-center justify-start w-full h-full">
-            <div className="w-20 h-4" style={{ backgroundColor: row?.color }} />
-          </div>
+          <Box className="flex items-center justify-start w-full h-full">
+            <Box className="w-20 h-4" style={{ backgroundColor: row?.color }} />
+          </Box>
         );
       },
     },

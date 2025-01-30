@@ -1,5 +1,12 @@
 import { Fragment, useEffect, useRef } from "react";
+import { Box } from "@mui/material";
+import * as PropTypes from "prop-types";
 
+Box.propTypes = {
+  onClick: PropTypes.func,
+  className: PropTypes.string,
+  children: PropTypes.node
+};
 const SuggestionDropdown = ({
   wordSuggestion,
   isPredict,
@@ -70,7 +77,7 @@ const SuggestionDropdown = ({
   return (
     <Fragment>
       {wordSuggestion && !!suggestions.length && (
-        <div
+        <Box
           ref={suggestionDropdownRef}
           className="suggestion-dropdown"
           style={{
@@ -79,18 +86,18 @@ const SuggestionDropdown = ({
           }}
         >
           {suggestions.map((suggestion, index) => (
-            <div
+            <Box
               className={`dropdown-item ${index === 0 ? "active" : ""}`}
               key={`suggestion-${index}`}
               onClick={() => handleSuggestionSelect(suggestion)}
             >
               {suggestion}
-            </div>
+            </Box>
           ))}
-        </div>
+        </Box>
       )}
       {isPredict && !!predictions.length && (
-        <div
+        <Box
           ref={predictionDropdownRef}
           className="suggestion-dropdown"
           style={{
@@ -99,15 +106,15 @@ const SuggestionDropdown = ({
           }}
         >
           {predictions.map((prediction, index) => (
-            <div
+            <Box
               className={`dropdown-item ${index === 0 ? "active" : ""}`}
               key={`prediction-${index}`}
               onClick={() => handlePredictionSelect(prediction)}
             >
               {prediction}
-            </div>
+            </Box>
           ))}
-        </div>
+        </Box>
       )}
     </Fragment>
   );

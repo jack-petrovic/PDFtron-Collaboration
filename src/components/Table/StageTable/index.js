@@ -4,7 +4,6 @@ import {
   Box,
   Checkbox,
   FormControlLabel,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -20,7 +19,7 @@ import { useSelector } from "react-redux";
 import { ArchivedChip, ArchivedIcon } from "../../../pages/style";
 import { addDays } from "date-fns";
 
-const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
+const StageTable = ({ data, onChange, planStart }) => {
   const { t } = useTranslation();
   const [stages, setStages] = useState([]);
   const [signedRoles, setSignedRoles] = useState([]);
@@ -36,40 +35,26 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
         value: true,
       },
     ];
-    query.pageSize = 10;
+    query.pageSize = 100;
     query.page = 0;
     getRoles(query)
       .then((res) => {
         setSignedRoles(res.rows);
       })
-      .catch((err) => {
-        console.log("err=>", err);
+      .catch((error) => {
+        console.log("error=>", error);
       });
     if (data) {
       const dataStages = JSON.parse(data || "[]");
       const orderedStages = dataStages.sort(
         (a, b) => parseInt(a.order) - parseInt(b.order),
       );
-      setStages([
-        orderedStages.find(
-          (item) => item.stageMode === StageMode.PRESCRIPTIONMODE,
-        ),
-        ...orderedStages.filter(
-          (item) => item.stageMode !== StageMode.PRESCRIPTIONMODE,
-        ),
-      ]);
+      setStages(orderedStages);
     } else {
       const orderedStages = allStages
         .sort((a, b) => parseInt(a.order) - parseInt(b.order))
         .filter((stage) => stage.enabled);
-      setStages([
-        orderedStages.find(
-          (item) => item.stageMode === StageMode.PRESCRIPTIONMODE,
-        ),
-        ...orderedStages.filter(
-          (item) => item.stageMode !== StageMode.PRESCRIPTIONMODE,
-        ),
-      ]);
+      setStages(orderedStages);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
@@ -92,19 +77,20 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
   }, [stages]);
 
   const handleEnableChange = (ind) => {
-    if (!stages[ind].enabled) {
-      setStages(
-        stages.map((item, index) =>
-          ind === index ? { ...item, enabled: true, days: 2 } : { ...item },
-        ),
-      );
-    } else {
-      setStages(
-        stages.map((item, index) =>
-          ind === index ? { ...item, enabled: false, days: 0 } : { ...item },
-        ),
-      );
-    }
+    setStages(
+      stages.map((item, index) => {
+        if (ind === index) {
+          return {
+            ...item,
+            enabled: !item.enabled,
+            printPermission: item.enabled ? false : item.printPermission,
+            printVolume: item.enabled ? 0 : item.printVolume,
+            days: !item.enabled ? 2 : 0
+          };
+        }
+        return item;
+      })
+    );
   };
 
   const handlePrintPermissionChange = (stageId) => {
@@ -113,13 +99,27 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
         if (item.id === stageId) {
           let printPermission = item?.printPermission || false;
           printPermission = !printPermission;
-          return {
-            ...item,
-            printPermission,
-          };
+          if (printPermission) {
+            return {
+              ...item,
+              printPermission,
+            };
+          } else {
+            return {
+              ...item,
+              printPermission,
+              printVolume: 0,
+            };
+          }
         } else return item;
       }),
     );
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === '-') {
+      e.preventDefault();
+    }
   };
 
   const handleDaysChange = (ind, value) => {
@@ -206,7 +206,7 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
   };
 
   return (
-    <TableContainer component={Paper} sx={{ width: "100%", padding: "8px" }}>
+    <TableContainer sx={{ width: "100%", padding: "8px" }}>
       <Table size="small">
         <TableHead>
           <TableRow>
@@ -238,10 +238,7 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
         </TableHead>
         <TableBody>
           {stages.map((row, index) => (
-            <TableRow
-              key={index}
-              sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-            >
+            <TableRow key={index}>
               <TableCell align="center">
                 {row?.stageMode}
                 {checkItemDisabled(row) && (
@@ -261,14 +258,13 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
                     />
                   }
                   label={""}
-                  disabled={disable}
                 />
               </TableCell>
               <TableCell align="center">
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={row?.printPermission}
+                      checked={row?.printPermission || false}
                       onChange={() => handlePrintPermissionChange(row?.id)}
                     />
                   }
@@ -281,7 +277,6 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
               </TableCell>
               <TableCell align="center">
                 <TextField
-                  value={row?.enabled && row?.printPermission && row?.printVolume}
                   type="number"
                   sx={{
                     "& .MuiInputBase-root": {
@@ -290,9 +285,12 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
                       marginX: "auto",
                     },
                   }}
+                  value={(row?.enabled && row?.printPermission) ? row?.printVolume : ''}
+                  onKeyDown={handleKeyDown}
                   onChange={(e) =>
                     handlePrintAmountChange(index, e.target.value)
                   }
+                  inputProps={{ min: "0" }}
                   disabled={!row?.enabled || !row?.printPermission}
                 />
               </TableCell>
@@ -306,11 +304,12 @@ const StageTable = ({ data, onChange, disable, planStart, showRanges }) => {
                     },
                   }}
                   type="number"
-                  disabled={!row?.enabled || disable}
+                  disabled={!row?.enabled}
                   value={row?.days}
+                  onKeyDown={handleKeyDown}
                   onChange={(e) => handleDaysChange(index, e.target.value)}
                 />
-                {row?.enabled && showRanges && (
+                {row?.enabled && (
                   <Box>
                     {getRange(index).start} ~ {getRange(index).end}
                   </Box>

@@ -34,7 +34,7 @@ import { useAuthState } from "../../../hooks/redux";
 import { UserRoles } from "../../../constants";
 import { GiPapers } from "react-icons/gi";
 import NotificationsIcon from "@mui/icons-material/Notifications";
-import { Functions, LocalPrintshop } from "@mui/icons-material";
+import { Functions } from "@mui/icons-material";
 
 const Sidebar = () => {
   const navigate = useNavigate();

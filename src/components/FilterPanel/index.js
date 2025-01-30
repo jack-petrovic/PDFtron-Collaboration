@@ -44,17 +44,17 @@ const FilterPanel = ({ filter, onChangeFilter }) => {
   }, [sectionId, subSections]);
 
   return (
-    <Box className="rounded-lg border-2 border-[#d4d4d4] p-5 m-6">
-      <Typography marginBottom={2} variant="subtitle2" className="text-[#3c3c3c]">
+    <Box className="rounded-md border-2 border-[#d4d4d4] p-3 mx-6 mb-5">
+      <Typography variant="subtitle2" className="py-2 text-[#3c3c3c]">
         {t("print_request_filter_condition")}
       </Typography>
       <Box className="sm:flex columns-3 gap-2">
         <DatePicker
-          format="yyyy-M"
-          label="Month"
+          views={['year', 'month']}
+          label={t("common_table_month")}
           className="w-full"
-          value={filter.date}
-          onChange={(value) => onChangeFilter("date", value)}
+          value={filter.month}
+          onChange={(value) => onChangeFilter("month", value)}
         />
         <FormControl variant="filled" className="w-full">
           <InputLabel size="small">{t("common_table_section")}</InputLabel>
@@ -74,14 +74,14 @@ const FilterPanel = ({ filter, onChangeFilter }) => {
         </FormControl>
         {filter.section && (
           <FormControl variant="filled" className="w-full">
-            <InputLabel size="small">Sub Section</InputLabel>
+            <InputLabel size="small">{t("common_table_subsection")}</InputLabel>
             <Select
               value={subSection}
               onChange={handleChangeSubSectionId}
               aria-label="Select Sub Section"
               className="w-full"
             >
-              <MenuItem value="">No select ...</MenuItem>
+              <MenuItem value="">{t("print_request_no_select")}</MenuItem>
               {availableSubSections.map((option) => (
                 <MenuItem key={option.id} value={option.name}>
                   {option.name}

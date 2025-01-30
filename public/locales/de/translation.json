@@ -143,6 +143,7 @@
   "common_table_note": "Notizen",
   "common_table_plan": "Planen",
   "common_table_status": "Status",
+  "modal_draft_label": "Entwurf",
   "common_table_no_message": "Es gibt keine Nachricht.",
   "common_table_no_plan": "Es gibt keine Übereinstimmung für Ihren Abschnitt und Unterabschnitt.",
   "common_table_received_at": "Erhalten",
@@ -351,7 +352,6 @@
   "toast_pass_prescription_confirm_message": "Einige Rezepte wurden nicht genehmigt. Möchten Sie mit dem nächsten Schritt fortfahren?",
   "toast_mark_plan_success": "Plan wurde als abgeschlossen markiert!",
   "toast_mark_plan_error": "Plan wurde jetzt nicht abgeschlossen!",
-  "toast_image_is_not_existing": "Es gibt kein Avatarbild",
   "toast_upload_avatar_success": "Avatardatei wurde erfolgreich hochgeladen!",
   "toast_upload_avatar_failed": "Das Hochladen der Avatar-Datei ist fehlgeschlagen!",
   "toast_remove_avatar_success": "Avatar-Datei wurde erfolgreich entfernt!",
@@ -449,6 +449,7 @@
   "image_compare_modal_ok_button": "OK",
   "search_prohibited_word_button": "Suchen Sie nach verbotenen W  örtern",
   "common_save": "Speichern",
+  "common_save_as_draft": "Save as draft",
   "modal_stage_required": "Bühne ist erforderlich",
   "modal_owner_required": "Eigentümer ist erforderlich",
   "modal_planId_required": "PlanId ist erforderlich",
@@ -613,5 +614,8 @@
   "confirmation_password": "Bestätigungskennwort",
   "confirmation_password_placeholder": "Bestätigungskennwort eingeben ...",
   "confirmation_password_required": "Bestätigungskennwort ist erforderlich",
-  "session_expired": "Sitzung abgelaufen"
+  "session_expired": "Sitzung abgelaufen",
+  "month": "Monat",
+  "section": "Sectio",
+  "sub_section": "Hilps Sectio"
 }

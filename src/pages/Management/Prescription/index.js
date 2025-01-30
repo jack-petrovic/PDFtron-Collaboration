@@ -32,8 +32,9 @@ import {
   MoreActionsIcon,
 } from "../../style";
 import ViewPrescriptionModal from "../../../components/Modal/ViewPrescriptionModal";
-import VisibilityIcon from "@mui/icons-material/Visibility";
 import debounce from "lodash/debounce";
+import EditIcon from "@mui/icons-material/Edit";
+import DescriptionIcon from "@mui/icons-material/Description";
 
 const Prescription = () => {
   const { t } = useTranslation();
@@ -162,7 +163,7 @@ const Prescription = () => {
     setOpenModal(false);
   };
 
-  const handleEditPrescription = (row) => {
+  const handleReviewPrescription = (row) => {
     const approvalStatus = JSON.parse(row?.approvalStatus || "{}");
     if (account.role.name === UserRoles.MASTER) {
       if (approvalStatus[UserRoles.SUBMASTER] === 1) {
@@ -177,6 +178,12 @@ const Prescription = () => {
       setActivePrescription(prescriptions[row.no - 1]);
       handleClose();
     }
+  };
+
+  const handleEditPrescription = (row) => {
+    setOpenModal(true);
+    setActivePrescription(prescriptions[row.no - 1]);
+    handleClose();
   };
 
   const handleOpenRemoveModal = (item) => {
@@ -330,6 +337,14 @@ const Prescription = () => {
       },
     },
     {
+      field: "isDraft",
+      headerName: getLocaleString("modal_draft_label"),
+      type: "boolean",
+      editable: false,
+      flex: 1,
+      minWidth: 50,
+    },
+    {
       field: "comment",
       headerName: getLocaleString("modal_comment_label"),
       editable: false,
@@ -396,6 +411,7 @@ const Prescription = () => {
     owner: item?.user.name,
     plan: item?.plan.title,
     approvalStatus: item?.approvalStatus,
+    isDraft: item?.isDraft,
     comment: Object.values(JSON.parse(item?.comment || "{}")).toString(),
     createdAt: moment(item.createdAt).toDate(),
     updatedAt: moment(item.updatedAt).toDate(),
@@ -418,16 +434,13 @@ const Prescription = () => {
           >
             {getLocaleString("common_go_back")}
           </Button>
-          {(account.role.name === UserRoles.EDITOR ||
-            account.role.name === UserRoles.SUBMASTER) && (
-            <Button
-              variant="outlined"
-              startIcon={<AddIcon />}
-              onClick={handleOpenModal}
-            >
-              {getLocaleString("common_create")}
-            </Button>
-          )}
+          <Button
+            variant="outlined"
+            startIcon={<AddIcon />}
+            onClick={handleOpenModal}
+          >
+            {getLocaleString("common_create")}
+          </Button>
         </Box>
       </ContentHeader>
       <CustomDataGrid
@@ -450,9 +463,22 @@ const Prescription = () => {
             "aria-labelledby": "basic-button",
           }}
         >
+          {(activeRow.isDraft &&
+            account.role.name === activeRow.owner
+          ) && (
+            <ActionMenuItem
+              onClick={() => handleEditPrescription(activeRow)}
+            >
+              <EditIcon className="menu-icon" />
+              {getLocaleString("common_edit")}
+            </ActionMenuItem>
+          )}
           {(account.role.name === UserRoles.MASTER ||
             account.role.name === UserRoles.SUBMASTER) && (
-            <ActionMenuItem onClick={() => handleEditPrescription(activeRow)}>
+            <ActionMenuItem
+              onClick={() => handleReviewPrescription(activeRow)}
+              disabled={activeRow.isDraft}
+            >
               <ReviewsIcon className="menu-icon" />
               {getLocaleString("common_review")}
             </ActionMenuItem>
@@ -464,9 +490,11 @@ const Prescription = () => {
             <DifferenceIcon sx={{ marginRight: "1rem", color: "grey" }} />
             {getLocaleString("common_compare")}
           </ActionMenuItem>
-          {account.role.name === UserRoles.EDITOR && (
+          {!(activeRow.isDraft &&
+            account.role.name === activeRow.owner
+          ) && (
             <ActionMenuItem onClick={() => handleOpenViewModal(activeRow)}>
-              <VisibilityIcon className="menu-icon" />
+              <DescriptionIcon className="menu-icon" />
               {getLocaleString("common_view")}
             </ActionMenuItem>
           )}

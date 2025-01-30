@@ -398,8 +398,8 @@ const ImageCompare = ({ file1, file2, isRandomMode }) => {
           }
         });
       })
-      .catch((err) => {
-        console.log("err=>", err);
+      .catch((error) => {
+        console.log("error=>", error);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadDocumentViewer]);

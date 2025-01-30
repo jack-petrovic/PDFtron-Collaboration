@@ -42,8 +42,8 @@ const Gantt = () => {
       .then((res) => {
         setPlans(res.rows);
       })
-      .catch((err) => {
-        console.log("err=>", err);
+      .catch((error) => {
+        console.log("error=>", error);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -166,15 +166,15 @@ const Gantt = () => {
 
   return (
     <Box>
-      <div className="zoom-bar">
+      <Box className="zoom-bar">
         <Toolbar
           zoom={currentZoom}
           onZoomChange={handleZoomChange}
           onFilterChange={handleFilterChange}
         />
-      </div>
+      </Box>
 
-      <div className="gantt-container">
+      <Box className="gantt-container">
         <GanttChart
           dataSource={chartData}
           onDataUpdated={logDataUpdate}
@@ -182,7 +182,7 @@ const Gantt = () => {
           onTaskClick={handleTaskClick}
           onCreateTask={handleCreateTask}
         />
-      </div>
+      </Box>
 
       <MessageArea messages={currentMessages} />
       <CreatePlanModal

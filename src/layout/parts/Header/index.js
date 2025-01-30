@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { setNotifications, setSearch } from "../../../redux/actions";
@@ -71,7 +71,6 @@ const Header = () => {
   const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
   const isLanguageMenuOpen = Boolean(languageMenuAnchorEl);
   const isNotificationMenuOpen = Boolean(notificationAnchorEl);
-  const [searchParams, setSearchParams] = useSearchParams();
   const notifications = useSelector(
     (state) => state.notificationReducer.notifications,
   );
@@ -112,7 +111,6 @@ const Header = () => {
   };
 
   const handleChangeSearch = (e) => {
-    setSearchParams({ key: e.target.value });
     dispatch(setSearch(e.target.value, "contains"));
     saveSearchKeyHandler(e.target.value);
   };
@@ -167,14 +165,6 @@ const Header = () => {
   }, []);
 
   const handleDebounceChangeSearch = debounce(handleChangeSearch, 700);
-
-  useEffect(() => {
-    const key = searchParams.get("key");
-    if (key) {
-      dispatch(setSearch(key, "contains"));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const gotoProfile = () => {
     navigate("/profile");
@@ -379,16 +369,16 @@ const Header = () => {
       }}
       open={isNotificationMenuOpen}
       onClose={handleNotificationMenuClose}
-      sx={{ display: "block" }}
+      sx={{ display: "block", marginTop: "20px" }}
     >
       {notifications.length ? (
         <React.Fragment>
-          <div className="flex justify-between px-2">
+          <Box className="flex justify-between px-2">
             <Button onClick={handleClearAll}>{getLocaleString("clear")}</Button>
             <Button onClick={handleMarkAllAsRead}>
               {getLocaleString("mark_all_as_read")}
             </Button>
-          </div>
+          </Box>
           {notifications.map((item, index) => (
             <MenuItem
               key={`menu-${index}`}
@@ -404,8 +394,8 @@ const Header = () => {
                     : "1px solid lightgray",
               }}
             >
-              <div className="grid w-full justify-items-stretch">
-                <div className="mt-5 justify-self-start">
+              <Box className="grid w-full justify-items-stretch">
+                <Box className="mt-5 justify-self-start">
                   <span
                     id="notification_content"
                     style={{ fontWeight: item.unread ? "bolder" : "lighter" }}
@@ -416,20 +406,20 @@ const Header = () => {
                       JSON.parse(item?.content).data,
                     )}
                   </span>
-                </div>
-                <div className="justify-self-end">
+                </Box>
+                <Box className="justify-self-end">
                   <span className="text-red-600 text-xs">
                     {moment(item.createdAt).format("YYYY-MM-DD HH:mm:ss")}
                   </span>
-                </div>
-              </div>
+                </Box>
+              </Box>
             </MenuItem>
           ))}
-          <div className="grid justify-items-stretch px-2">
+          <Box className="grid justify-items-stretch px-2">
             <Button onClick={handleViewAll} className="justify-self-end">
               {getLocaleString("view_all")}
             </Button>
-          </div>
+          </Box>
         </React.Fragment>
       ) : (
         <MenuItem
@@ -441,13 +431,13 @@ const Header = () => {
           }}
           key={notifications.index}
         >
-          <div className="grid w-full justify-items-stretch">
-            <div className="justify-self-start">
+          <Box className="grid w-full justify-items-stretch">
+            <Box className="justify-self-start">
               <span id="notification_content">
                 {getLocaleString("common_table_no_message")}
               </span>
-            </div>
-          </div>
+            </Box>
+          </Box>
         </MenuItem>
       )}
     </Menu>
@@ -461,7 +451,6 @@ const Header = () => {
           <Typography
             variant="h6"
             noWrap
-            component="div"
             ml={2}
             onClick={handleGoToHome}
             className="hidden sm:block cursor-pointer"

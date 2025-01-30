@@ -544,9 +544,7 @@ const CreatePlanModal = ({ open, close, data, create, update }) => {
                 <StageTable
                   data={data?.stages}
                   onChange={handleStagesChange}
-                  disable={false}
                   planStart={form.values.startDate}
-                  showRanges={true}
                 />
               </FormBox>
               <SubmitButton fullWidth type="submit" variant="contained" disabled={data && !isChanged}>

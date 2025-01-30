@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from "react";
 import { gantt } from "dhtmlx-gantt";
 import "dhtmlx-gantt/codebase/dhtmlxgantt.css";
 import "./GanttChart.css";
+import { Box } from "@mui/material";
 
 export const GanttChart = (props) => {
   const { dataSource, onDataUpdated, zoom, onTaskClick, onCreateTask } = props;
@@ -99,6 +100,6 @@ export const GanttChart = (props) => {
   }, []);
 
   return (
-    <div ref={ganttContainerRef} style={{ width: "100%", height: "100%" }} />
+    <Box ref={ganttContainerRef} style={{ width: "100%", height: "100%" }} />
   );
 };

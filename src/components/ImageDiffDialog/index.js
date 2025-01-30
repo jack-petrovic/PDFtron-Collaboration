@@ -10,7 +10,11 @@ const ImageDiffDialog = ({ src }) => {
         padding: "2rem",
       }}
     >
-      <img src={src} alt="Result" width="100%" />
+      <img
+        src={src}
+        alt="Result"
+        width="100%"
+      />
     </Box>
   );
 };

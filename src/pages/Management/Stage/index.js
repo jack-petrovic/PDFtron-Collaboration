@@ -198,7 +198,7 @@ const Stage = () => {
       await getAllStages().then((data) => {
         setRowLength(data.count);
         setStages(data.rows);
-        data.rows.map((item) => {
+        data.rows.forEach((item) => {
           dispatch(editStage(item));
         })
       });

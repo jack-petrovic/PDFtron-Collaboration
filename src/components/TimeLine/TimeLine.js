@@ -475,11 +475,11 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
                 style={{ width: "40px" }}
                 className="w-20"
               >
-                <div className="ring-container justify-center">
+                <Box className="ring-container justify-center">
                   {plan?.currentStage === index ? (
                     <>
-                      <div className="ringing" />
-                      <div className="circle" />
+                      <Box className="ringing" />
+                      <Box className="circle" />
                     </>
                   ) : (
                     <TimelineDot
@@ -491,7 +491,7 @@ const StageTimeLine = ({ plan, setPlan, timelineProps = {} }) => {
                       }}
                     />
                   )}
-                </div>
+                </Box>
                 <TimelineConnector
                   sx={{ display: index + 1 === data?.length ? "none" : "" }}
                 />

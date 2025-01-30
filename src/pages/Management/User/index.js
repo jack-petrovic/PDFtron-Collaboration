@@ -176,8 +176,8 @@ const UserPage = () => {
       .then((res) => {
         ToastService.success(getLocaleString(res.message));
       })
-      .catch((err) => {
-        console.log("err=>", err);
+      .catch((error) => {
+        console.log("error=>", error);
       });
     handleClose(); // Close the confirmation modal
     setOpenResetPasswordModal(false); // Close the reset password modal

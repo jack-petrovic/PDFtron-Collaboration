@@ -313,12 +313,23 @@ const Plan = () => {
     publishDate: moment(row.publishDate).toDate(),
     paperSize: row.paper_size?.name || "None",
     paperSizeId: row.paper_size?.id,
+    isHighlighted: false,
   }));
-
 
   const handleGoBack = () => {
     navigate("/");
   };
+
+  const newRows = rows.map(item => {
+    if(new Date().getTime() <= item.publishDate.getTime() && item.publishDate.getTime() <= new Date().getTime() + 7 * 86400000) {
+      return {
+        ...item,
+        isHighlighted: true
+      };
+    } else {
+      return item;
+    }
+  });
 
   return (
     <ContentWrapper>
@@ -371,7 +382,7 @@ const Plan = () => {
         </Box>
       </ContentHeader>
       <CustomDataGrid
-        rows={rows}
+        rows={newRows}
         columns={planTableColumns}
         filterMode="server"
         rowLength={rowLength}
@@ -379,7 +390,7 @@ const Plan = () => {
         paginationModel={paginationModel}
         filterModel={filterModel}
         onFilterChanged={handleDebounceChangeSearch}
-        />
+      />
       {isOpen && (
         <Menu
           id="basic-menu"

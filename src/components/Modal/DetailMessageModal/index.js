@@ -21,15 +21,15 @@ const DetailMessageModal = ({ data, open, close }) => {
           {getLocaleString("message_modal_title")}
         </Typography>
         <Divider style={{ marginTop: "10px", marginBottom: "10px" }} />
-        <div className="break-all">
+        <Box className="break-all">
           {t(JSON.parse(data?.content).key, JSON.parse(data?.content).data)}
-        </div>
-        <div className="grid justify-items-stretch my-5">
-          <div className="justify-self-end text-sm">
+        </Box>
+        <Box className="grid justify-items-stretch my-5">
+          <Box className="justify-self-end text-sm">
             {getLocaleString("created_date_label")}{" "}
             {moment(data.createdAt).format("YYYY-MM-DD HH:mm:ss")}
-          </div>
-        </div>
+          </Box>
+        </Box>
       </Box>
     </Modal>
   );

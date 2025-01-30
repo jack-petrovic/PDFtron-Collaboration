@@ -361,8 +361,6 @@ const CreateFixedPlanModal = ({ open, close, data, create, update }) => {
                   data={data?.stages}
                   planStart={new Date().toString()}
                   onChange={handleStagesChange}
-                  showRanges={false}
-                  disable={false}
                 />
               </FormBox>
               <SubmitButton fullWidth type="submit" variant="contained" disabled={data && !isChanged}>

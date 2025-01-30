@@ -12,6 +12,7 @@ import {
   TextField,
   Switch,
   Grid,
+  Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import {
@@ -92,9 +93,10 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
   const id = data?.id;
   const editing = !!data;
 
-  const [toggle, setToggle] = useState(true);
   const [sectionId, setSectionId] = useState(0);
   const [gender, setGender] = useState(true);
+  const [toggle, setToggle] = useState(true);
+
   const sections = useSelector((state) => state.sectionReducer.sections);
   const subSections = useSelector(
     (state) => state.subSectionReducer.subSections,
@@ -220,13 +222,16 @@ const CreateUserModal = ({ open, close, data, create, update }) => {
       >
         <FormContainer sx={{ maxHeight: "90vh", padding: 2, paddingTop: 4 }}>
           <form onSubmit={form.handleSubmit}>
-            <div className="flex items-center my-5">
-              <p className="mr-5">{getLocaleString("activate_user")}</p>
-              <Switch
-                defaultChecked={data?.activated ?? false}
-                onChange={handleToggle}
-              />
-            </div>
+            <Box className="flex items-center justify-between">
+              <Box className="flex items-center">
+                <Typography className="mr-5">{getLocaleString("activate_user")}</Typography>
+                <Switch
+                  defaultChecked={data?.activated ?? false}
+                  onChange={handleToggle}
+                />
+              </Box>
+              <img src="/assets/img/user.svg" className="w-32 h-28" alt="profile-image"/>
+            </Box>
             <Box sx={{ maxHeight: "60vh", overflowY: "auto" }}>
               <TextField
                 fullWidth

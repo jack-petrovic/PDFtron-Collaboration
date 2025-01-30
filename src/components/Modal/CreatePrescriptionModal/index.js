@@ -39,18 +39,20 @@ const CreatePrescriptionModal = ({ data, open, close, create, update }) => {
   const [disabled, setDisabled] = useState(false);
   const getLocaleString = (key) => t(key);
 
-  const handleSubmit = async (formData) => {
+  const handleSubmit = async () => {
     if (disabled) return;
+    const formData = { ...form.values, isDraft: false };
     editing ? update(id, formData) : create(formData);
   };
 
   const form = useFormik({
     validationSchema,
     initialValues: {
-      title: "",
-      content: "",
-      comment: "",
-      approvalStatus: "{}",
+      title: data?.title || "",
+      content: data?.content || "",
+      comment: data?.comment || "",
+      isDraft: false,
+      approvalStatus: data?.approvalStatus || "{}",
     },
     onSubmit: handleSubmit,
   });
@@ -115,6 +117,13 @@ const CreatePrescriptionModal = ({ data, open, close, create, update }) => {
       connectionRef.current.close();
     };
   }, []);
+
+  const handleSaveAsDraft = async () => {
+    if (!disabled) {
+      const draftData = { ...form.values, isDraft: true };
+      editing ? update(id, draftData) : create(draftData);
+    }
+  };
 
   const updateApprovalStatus = (status) => {
     const currentStatus = JSON.parse(form.values.approvalStatus || "{}");
@@ -202,6 +211,7 @@ const CreatePrescriptionModal = ({ data, open, close, create, update }) => {
                     label={getLocaleString("modal_comment_label")}
                     placeholder={getLocaleString("modal_comment_placeholder")}
                     onChange={handleChangeComment}
+                    disabled={editing && data?.isDraft}
                     value={
                       JSON.parse(form.values.comment || "{}")[account.role.name]
                     }
@@ -224,6 +234,7 @@ const CreatePrescriptionModal = ({ data, open, close, create, update }) => {
                           account.role.name
                         ] === 1
                       }
+                      disabled={editing && data?.isDraft}
                       label={getLocaleString("document_modal_approve_button")}
                       onChange={handleChangeStatus}
                     />
@@ -262,14 +273,29 @@ const CreatePrescriptionModal = ({ data, open, close, create, update }) => {
                 account.role.name === UserRoles.MASTER ||
                 account.role.name === UserRoles.SUBMASTER ||
                 !editing) && (
-                <SubmitButton
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  disabled={disabled || !isChanged}
-                >
-                  {getLocaleString("common_submit")}
-                </SubmitButton>
+                <div className="flex justify-end gap-4">
+                  {(!editing || data?.isDraft) &&
+                    <SubmitButton
+                      variant="contained"
+                      color="secondary"
+                      onClick={handleSaveAsDraft}
+                      disabled={disabled ||
+                        !isChanged ||
+                        (masterStatus === 1 && subMasterStatus === 1)
+                      }
+                    >
+                      {getLocaleString("common_save_as_draft")}
+                    </SubmitButton>
+                  }
+                  <SubmitButton
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    disabled={disabled || !isChanged}
+                  >
+                    {getLocaleString("common_submit")}
+                  </SubmitButton>
+                </div>
               )}
             </Box>
           </form>

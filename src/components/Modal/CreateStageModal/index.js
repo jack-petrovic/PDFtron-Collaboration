@@ -103,7 +103,7 @@ const CreateStageModal = ({ data, open, close, create, update }) => {
                     )}
                   />
                 </Box>
-                <div className="md:flex justify-between items-center">
+                <Box className="md:flex justify-between items-center">
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -114,6 +114,8 @@ const CreateStageModal = ({ data, open, close, create, update }) => {
                     label={getLocaleString("common_table_enable")}
                   />
                 </div>
+                  />
+                </Box>
                 <CloseButtonBox>
                   <CloseIcon onClick={close} />
                 </CloseButtonBox>

@@ -143,6 +143,7 @@
   "common_table_note": "Notes",
   "common_table_plan": "Plan",
   "common_table_status": "Status",
+  "modal_draft_label": "Draft",
   "common_table_no_message": "There is no message.",
   "common_table_no_plan": "There is no match for your section and subsection.",
   "common_table_received_at": "Received",
@@ -351,7 +352,6 @@
   "toast_pass_prescription_confirm_message": "Some prescriptions were not approved, would you like to move forward to the next stage?",
   "toast_mark_plan_success": "Plan was marked as completed!",
   "toast_mark_plan_error": "Plan was not finished now!",
-  "toast_image_is_not_existing": "There is no avatar image",
   "toast_upload_avatar_success": "Avatar file was uploaded successfully!",
   "toast_upload_avatar_failed": "Failed to upload avatar file!",
   "toast_remove_avatar_success": "Avatar file was removed successfully!",
@@ -449,6 +449,7 @@
   "image_compare_modal_ok_button": "Ok",
   "search_prohibited_word_button": "Search Prohibited Words",
   "common_save": "Save",
+  "common_save_as_draft": "Save as draft",
   "modal_stage_required": "Stage is required",
   "modal_owner_required": "Owner is required",
   "modal_planId_required": "PlanId is required",
@@ -613,5 +614,8 @@
   "confirmation_password": "Confirmation Password",
   "confirmation_password_placeholder": "Enter Confirmation Password...",
   "confirmation_password_required": "Confirmation Password is required",
-  "session_expired": "Session expired"
+  "session_expired": "Session expired",
+  "month": "Month",
+  "section": "Section",
+  "sub_section": "Sub Section"
 }

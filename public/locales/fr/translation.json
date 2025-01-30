@@ -143,6 +143,7 @@
   "common_table_note": "Remarques",
   "common_table_plan": "Plan",
   "common_table_status": "Statut",
+  "modal_draft_label": "Brouillon",
   "common_table_no_message": "Il n'y a pas de message.",
   "common_table_no_plan": "Il n'y a aucune correspondance pour votre section et sous-section.",
   "common_table_received_at": "Reçue",
@@ -351,7 +352,6 @@
   "toast_pass_prescription_confirm_message": "Certaines prescriptions n'ont pas été approuvées, souhaitez-vous passer à l'étape suivante ?",
   "toast_mark_plan_success": "Le plan a été marqué comme terminé !",
   "toast_mark_plan_error": "Le plan n'était pas terminé maintenant !",
-  "toast_image_is_not_existing": "Il n'y a pas d'image d'avatar",
   "toast_upload_avatar_success": "Le fichier avatar a été téléchargé avec succès !",
   "toast_upload_avatar_failed": "Échec du téléchargement du fichier avatar !",
   "toast_remove_avatar_success": "Le fichier Avatar a été supprimé avec succès !",
@@ -449,6 +449,7 @@
   "image_compare_modal_ok_button": "D'accord",
   "search_prohibited_word_button": "Rechercher des mots interdits",
   "common_save": "Sauvegarder",
+  "common_save_as_draft": "Enregistrer comme brouillon",
   "modal_stage_required": "La scène est obligatoire",
   "modal_owner_required": "Le propriétaire est requis",
   "modal_planId_required": "L'ID du plan est requis",
@@ -613,5 +614,8 @@
   "confirmation_password": "Confirmation du mot de passe",
   "confirmation_password_placeholder": "Entrez le mot de passe de confirmation...",
   "confirmation_password_required": "Le mot de passe de confirmation est requis",
-  "session_expired": "Session expirée"
+  "session_expired": "Session expirée",
+  "month": "Mois",
+  "section": "Section",
+  "sub_section": "Sub Section"
 }

@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { InputLabel, MenuItem, Select } from "@mui/material";
+import { Box, InputLabel, MenuItem, Select } from "@mui/material";
 import { useSelector } from "react-redux";
 
 export const Toolbar = ({ onZoomChange, zoom, onFilterChange }) => {
@@ -48,8 +48,8 @@ export const Toolbar = ({ onZoomChange, zoom, onFilterChange }) => {
   }, [zoom, zoomOptions]);
 
   return (
-    <div className="sm:flex justify-between items-end h-full">
-      <div className="flex justify-between items-center w-44 pt-2">
+    <Box className="sm:flex justify-between items-end h-full">
+      <Box className="flex justify-between items-center w-44 pt-2">
         <InputLabel id="section-label" className="filter_label">
           <b>{getLocaleString("menu_filter")}: </b>
         </InputLabel>
@@ -69,11 +69,11 @@ export const Toolbar = ({ onZoomChange, zoom, onFilterChange }) => {
             </MenuItem>
           ))}
         </Select>
-      </div>
-      <div className="pt-2">
+      </Box>
+      <Box className="pt-2">
         <b>{getLocaleString("gantt_chart_toolbar_title")}: </b>
         {zoomRadios}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
